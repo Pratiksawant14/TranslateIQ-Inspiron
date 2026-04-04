@@ -23,7 +23,7 @@ async def validate_document(db: AsyncSession, document_id: str) -> dict:
     segments = segments_query.scalars().all()
     
     if not segments:
-        await document_service.update_document_status(db, document_id, "translating")
+        await document_service.update_document_status(db, document_id, "parsed")
         return {
             "document_id": document_id,
             "total_issues": 0,
@@ -154,11 +154,11 @@ async def validate_document(db: AsyncSession, document_id: str) -> dict:
         logger.error(f"Claude terminology check failed: {e}")
         # Soft fail, don't break validation workflow
 
-    # Step 4: Save issues and update document status
+    # 4. Save issues and update document status
     if issues_to_create:
         db.add_all(issues_to_create)
     
-    await document_service.update_document_status(db, document_id, "translating")
+    await document_service.update_document_status(db, document_id, "validated")
     await db.commit()
 
     # If new records exist, we need to refresh them to fetch their created IDs

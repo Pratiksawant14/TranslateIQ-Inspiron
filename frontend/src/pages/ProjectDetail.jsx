@@ -15,6 +15,9 @@ import {
   ShieldCheck,
   PenLine,
   Download,
+  ArrowRight,
+  CheckSquare,
+  RefreshCw,
 } from 'lucide-react';
 import { getProject } from '../lib/api/projects';
 import {
@@ -25,6 +28,7 @@ import {
   classifyDocument,
   translateDocument,
 } from '../lib/api/documents';
+import { scoreDocument } from '../lib/api/review';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -183,6 +187,22 @@ const ProjectDetail = () => {
     }
   };
 
+  // Pipeline action: Score
+  const handleScore = async (doc) => {
+    if (!project) return;
+    setActionLoading((p) => ({ ...p, [doc.id]: 'scoring' }));
+    try {
+      await scoreDocument(projectId, doc.id, project.target_language || 'Spanish');
+      queryClient.invalidateQueries({ queryKey: ['documents', projectId] });
+      toast('Quality scoring complete', 'success');
+      navigate(`/projects/${projectId}/documents/${doc.id}/review`);
+    } catch (err) {
+      toast(err.response?.data?.detail || 'Scoring failed', 'error');
+    } finally {
+      setActionLoading((p) => { const n = { ...p }; delete n[doc.id]; return n; });
+    }
+  };
+
   // Loading
   if (projectLoading || docsLoading) {
     return (
@@ -270,6 +290,7 @@ const ProjectDetail = () => {
                 actionLoading={actionLoading[doc.id]}
                 onValidate={() => handleValidate(doc)}
                 onTranslate={() => handleTranslate(doc)}
+                onScore={() => handleScore(doc)}
                 onNavigateReview={() => navigate(`/projects/${projectId}/documents/${doc.id}/review`)}
                 formatDate={formatDate}
               />
@@ -361,7 +382,7 @@ const ProjectDetail = () => {
 };
 
 // Document Card sub-component
-const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, onNavigateReview, formatDate }) => {
+const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, onScore, onNavigateReview, formatDate }) => {
   const navigate = useNavigate();
 
   const getFileIcon = () => {
@@ -374,6 +395,7 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
     if (actionLoading === 'validating') return 'Validating...';
     if (actionLoading === 'classifying') return 'Classifying segments...';
     if (actionLoading === 'translating') return 'Translating new segments...';
+    if (actionLoading === 'scoring') return 'Scoring quality...';
     return null;
   };
 
@@ -388,33 +410,67 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
       );
     }
 
-    switch (doc.status) {
+    const currentStatus = doc.status.toLowerCase();
+    
+    switch (currentStatus) {
       case 'uploaded':
         return (
-          <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); /* parse is auto during upload */ }}>
+          <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); /* parse is auto but safe to keep button */ }}>
             <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Parse Document
           </Button>
         );
+      case 'parsing':
       case 'parsed':
-      case 'validating':
         return (
           <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); onValidate(); }}>
             <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Validate
           </Button>
         );
+      case 'validating':
       case 'validated':
-      case 'translating':
         return (
           <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); onTranslate(); }}>
             <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Translate
           </Button>
         );
+      case 'translating':
       case 'translated':
       case 'reviewing':
         return (
-          <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); onNavigateReview(); }}>
-            <PenLine className="w-3.5 h-3.5 mr-1.5" /> Open Review Editor
-          </Button>
+          <div className="flex items-center gap-2">
+            {(currentStatus === 'translated' || currentStatus === 'reviewing') && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-slate-400 hover:text-white"
+                onClick={(e) => { e.stopPropagation(); onTranslate(); }}
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Redo
+              </Button>
+            )}
+            
+            {currentStatus === 'reviewing' ? (
+              <Button 
+                variant="primary" 
+                size="sm" 
+                onClick={(e) => { e.stopPropagation(); onNavigateReview(); }}
+              >
+                <PenLine className="w-3.5 h-3.5 mr-1.5" /> Open Review Editor
+              </Button>
+            ) : (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="bg-purple-600 hover:bg-purple-700 border-purple-500"
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    onScore(); 
+                }}
+              >
+                <CheckSquare className="w-3.5 h-3.5 mr-1.5" /> Score MT Quality
+              </Button>
+            )}
+          </div>
         );
       case 'completed':
         return (
@@ -428,22 +484,47 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
           </div>
         );
       default:
-        return null;
+        // Default to a debug primary button if status is unknown but we have a doc
+        return (
+          <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); onNavigateReview(); }}>
+            <ArrowRight className="w-3.5 h-3.5 mr-1.5" /> View Project
+          </Button>
+        );
+    }
+  };
+
+  const handleCardClick = () => {
+    // Determine where to go based on status
+    if (['uploaded', 'parsing', 'parsed', 'validating'].includes(doc.status)) {
+      onValidate();
+    } else if (['validated', 'classifying', 'translating'].includes(doc.status)) {
+      onTranslate();
+    } else if (['translated'].includes(doc.status)) {
+      // Don't navigate to review yet, need scoring
+      onScore();
+    } else if (['reviewing', 'completed'].includes(doc.status)) {
+      onNavigateReview();
     }
   };
 
   return (
-    <Card className="px-6 py-4">
+    <Card 
+      className="px-6 py-4 hover:border-blue-500/50 transition-all group/card" 
+      onClick={handleCardClick}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 group-hover/card:bg-slate-700 transition-colors">
             {getFileIcon()}
           </div>
           <div>
-            <p className="font-medium text-white">{doc.filename}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-white group-hover/card:text-blue-400 transition-colors">{doc.filename}</p>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover/card:text-blue-400 opacity-0 group-hover/card:opacity-100 transition-all -translate-x-2 group-hover/card:translate-x-0" />
+            </div>
             <div className="flex items-center gap-3 mt-1">
               <StatusBadge status={doc.status} />
-              <span className="text-xs text-slate-500">{doc.total_segments} segments</span>
+              <span className="text-xs text-slate-500">{doc.total_segments || 0} segments</span>
               <span className="text-xs text-slate-500">{formatDate(doc.created_at)}</span>
             </div>
           </div>

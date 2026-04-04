@@ -26,6 +26,7 @@ class ReviewSessionResponse(BaseModel):
     pending_count: int
     rejected_count: int
     completion_percentage: float
+    target_language: Optional[str]
     segments: List[ReviewSegmentResponse]
 
 class EditSegmentRequest(BaseModel):

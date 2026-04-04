@@ -34,8 +34,43 @@ async def ensure_collection_exists():
                 }
             )
             logger.info("Collection created successfully.")
+            
+            # Create indices for filterable fields
+            logger.info("Creating payload indices...")
+            await qdrant.create_payload_index(
+                collection_name=collection_name,
+                field_name="project_id",
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+            await qdrant.create_payload_index(
+                collection_name=collection_name,
+                field_name="source_language",
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+            await qdrant.create_payload_index(
+                collection_name=collection_name,
+                field_name="target_language",
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+            logger.info("Payload indices created successfully.")
         else:
             logger.info(f"Qdrant collection {collection_name} already exists.")
+            # Ensure indices exist even if collection does
+            await qdrant.create_payload_index(
+                collection_name=collection_name,
+                field_name="project_id",
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+            await qdrant.create_payload_index(
+                collection_name=collection_name,
+                field_name="source_language",
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+            await qdrant.create_payload_index(
+                collection_name=collection_name,
+                field_name="target_language",
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
     except Exception as e:
         logger.error(f"Error ensuring Qdrant collection exists: {e}")
         # Note: In production you might want to handle this gracefully

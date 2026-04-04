@@ -4,8 +4,11 @@ const StatusBadge = ({ status = 'uploaded', className = '' }) => {
   const config = {
     uploaded: { color: 'bg-slate-400', label: 'Uploaded' },
     parsing: { color: 'bg-blue-400', label: 'Parsing' },
+    parsed: { color: 'bg-indigo-400', label: 'Parsed' },
     validating: { color: 'bg-purple-400', label: 'Validating' },
+    validated: { color: 'bg-pink-400', label: 'Validated' },
     translating: { color: 'bg-amber-400', label: 'Translating' },
+    translated: { color: 'bg-yellow-400', label: 'Translated' },
     reviewing: { color: 'bg-orange-400', label: 'Reviewing' },
     completed: { color: 'bg-green-500', label: 'Completed' },
   };

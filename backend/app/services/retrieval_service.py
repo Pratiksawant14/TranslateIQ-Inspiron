@@ -69,9 +69,9 @@ async def retrieve_tm_matches(
     qdrant_ranks = {}
     query_vector = await generate_embedding(source_text)
     
-    qdrant_results = await qdrant.query(
+    response = await qdrant.query_points(
         collection_name=settings.QDRANT_COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=models.Filter(
             must=[
                 models.FieldCondition(
@@ -90,6 +90,8 @@ async def retrieve_tm_matches(
         ),
         limit=100
     )
+    
+    qdrant_results = response.points
     
     for rank, point in enumerate(qdrant_results):
         qdrant_ranks[str(point.id)] = {

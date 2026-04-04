@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = 6333
     QDRANT_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     QDRANT_COLLECTION_NAME: str = "translation_memory"
     APP_ENV: str = "development"

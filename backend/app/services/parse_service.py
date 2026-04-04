@@ -80,6 +80,7 @@ async def parse_document(db: AsyncSession, document_id: UUID) -> dict:
                 segment_index=segment_index,
                 content_type=content_type,
                 source_text=text,
+                tm_match_type="new",
                 status="pending"
             )
         )
@@ -95,7 +96,7 @@ async def parse_document(db: AsyncSession, document_id: UUID) -> dict:
     
     # Step 6: Update document total_segments and status='validating'
     document.total_segments = len(segments_to_insert)
-    document.status = "validating"
+    document.status = "parsed"
     await db.commit()
     await db.refresh(document)
     

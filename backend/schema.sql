@@ -3,6 +3,7 @@ CREATE TABLE projects (
 	name VARCHAR NOT NULL, 
 	description TEXT, 
 	source_language VARCHAR NOT NULL, 
+	target_language VARCHAR, 
 	created_at TIMESTAMP WITH TIME ZONE, 
 	updated_at TIMESTAMP WITH TIME ZONE, 
 	PRIMARY KEY (id)

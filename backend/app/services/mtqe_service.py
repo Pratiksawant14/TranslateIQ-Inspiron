@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.segment import Segment
+from app.models.document import Document
 from app.models.glossary import GlossaryEntry
 
 def score_segment(source_text: str, translated_text: str, glossary_terms: List[GlossaryEntry]) -> float:
@@ -44,7 +45,6 @@ async def score_document_segments(db: AsyncSession, document_id: str, project_id
         select(Segment)
         .where(
             Segment.document_id == document_id,
-            Segment.tm_match_type == "new",
             Segment.translated_text != None
         )
     )
@@ -79,6 +79,12 @@ async def score_document_segments(db: AsyncSession, document_id: str, project_id
             review_needed_count += 1
 
     if scored_count > 0:
+        # Step 4: Update document status to indicate it's ready for human review
+        doc_query = await db.execute(select(Document).where(Document.id == document_id))
+        document = doc_query.scalars().first()
+        if document:
+            document.status = "reviewing"
+            
         await db.commit()
 
     average_confidence = total_confidence / scored_count if scored_count > 0 else 0.0

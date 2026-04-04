@@ -7,12 +7,14 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
     source_language: str
+    target_language: Optional[str] = None
 
 class ProjectResponse(BaseModel):
     id: UUID
     name: str
     description: Optional[str] = None
     source_language: str
+    target_language: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

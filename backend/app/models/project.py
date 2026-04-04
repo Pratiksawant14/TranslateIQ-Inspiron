@@ -14,5 +14,6 @@ class Project(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     source_language = Column(String, nullable=False)
+    target_language = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
