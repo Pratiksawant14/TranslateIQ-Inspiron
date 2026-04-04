@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #0F1B2D;
+  --color-brand-secondary: #1E3A5F;
+  --color-brand-accent: #3B82F6;
+  --color-brand-accent-light: #60A5FA;
+
+  --color-surface: #0A1628;
+  --color-card: #162032;
+  --color-border: #1E3A5F;
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #475569;
+
+  --color-status-success: #10B981;
+  --color-status-warning: #F59E0B;
+  --color-status-danger: #EF4444;
+  --color-status-info: #6366F1;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Sora', 'Inter', sans-serif;
+
+  --animate-slideIn: slideIn 0.3s ease-out;
+  --animate-fadeIn: fadeIn 0.2s ease-out;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-text-primary font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

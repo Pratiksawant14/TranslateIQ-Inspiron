@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Qdrant local storage
+qdrant_storage/
+
+# Databases
+*.sqlite3
+
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test Data (optional, but keeping it for now unless you want it excluded)
+# test_data/

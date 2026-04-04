@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pydantic[email]
+pydantic-settings
+python-multipart
+python-dotenv
+anthropic
+qdrant-client
+sentence-transformers
+rank-bm25
+docling
+python-docx
+httpx
