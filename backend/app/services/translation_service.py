@@ -4,7 +4,8 @@ import re
 from typing import Dict, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from anthropic import AsyncAnthropic
+from fastapi import HTTPException, status
+import httpx
 
 from app.config import settings
 from app.models.segment import Segment
@@ -24,14 +25,10 @@ async def translate_document_segments(
     style_profile_id: Optional[str] = None
 ) -> Dict[str, Any]:
     
-    # 1. Fetch all 'new' segments waiting for LLM translation
+    # 1. Fetch all segments for the document (the loop skips already-translated ones)
     segments_query = await db.execute(
         select(Segment)
-        .where(
-            Segment.document_id == document_id,
-            Segment.tm_match_type == "new",
-            Segment.status == "pending"
-        )
+        .where(Segment.document_id == document_id)
         .order_by(Segment.segment_index)
     )
     segments = segments_query.scalars().all()
@@ -76,92 +73,113 @@ async def translate_document_segments(
             "target_language": target_language
         }
 
-    # API Client setup
-    api_key = settings.OPENROUTER_API_KEY
+    api_key = settings.OPENROUTER_API_KEY or settings.ANTHROPIC_API_KEY
     if not api_key:
-        logger.error("OpenRouter API key is missing. Cannot run translation.")
-        return {
-            "document_id": document_id,
-            "translated_count": 0,
-            "skipped_count": len(segments),
-            "target_language": target_language
-        }
+        logger.error("API key is missing. Set OPENROUTER_API_KEY in .env")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Translation service unavailable: API Key missing."
+        )
 
-    client = AsyncAnthropic(
-        api_key=api_key,
-        base_url=settings.OPENROUTER_BASE_URL,
-    )
+    logger.info(f"=== TRANSLATION START === Key: {api_key[:12]}... | Segments: {len(segments)} | Lang: {source_language}->{target_language}")
 
-    # 4. Process segments sequentially
-    for segment in segments:
-        if not segment.source_text or not segment.source_text.strip():
-            segment.translated_text = ""
-            translated_count += 1
-            continue
+    # OpenRouter API headers
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://translate-iq.com",
+        "X-Title": "TranslateIQ"
+    }
 
-        # Fetch top 2 TM fuzzy matches 
-        tm_examples = ""
-        try:
-            retrieval_res = await retrieve_tm_matches(
-                db=db, project_id=project_id, source_language=source_language, 
-                target_language=target_language, source_text=segment.source_text, top_k=2
-            )
-            matches = retrieval_res.get("matches", [])
-            if matches:
-                tm_examples = "TRANSLATION MEMORY EXAMPLES (Reference These):\n"
-                for i, m in enumerate(matches, 1):
-                    tm_examples += f"- Source: {m.get('source_text')}\n- Target: {m.get('target_text')}\n"
-        except Exception as e:
-            logger.warning(f"Failed to fetch TM matches for segment {segment.id}: {e}")
+    async with httpx.AsyncClient(timeout=120.0) as http_client:
+        for idx, segment in enumerate(segments):
+            logger.info(f"--- Segment {idx+1}/{len(segments)} (id={segment.id}) ---")
 
-        # Construct System & Prompt
-        sys_instructions = f"You are a professional translator. Translate the source text from {source_language} to {target_language}.\n\nTONE: {tone}\nSTYLE RULES: {custom_rules}\n\n{glossary_text}\n{tm_examples}"
-        
-        prompt = f"SOURCE TEXT:\n{segment.source_text}\n\nRespond in this JSON format only:\n{{\n  \"translation\": \"translated text here\",\n  \"glossary_terms_used\": [\"term1\", \"term2\"],\n  \"notes\": \"any inflection notes or empty string\"\n}}"
+            if not segment.source_text or not segment.source_text.strip():
+                segment.translated_text = ""
+                translated_count += 1
+                logger.info(f"  Skipped: empty source text")
+                continue
 
-        try:
-            response = await client.messages.create(
-                model="anthropic/claude-3.5-sonnet",
-                system=sys_instructions,
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            
-            raw_text = response.content[0].text.strip()
-            
-            # Catch standard markdown formatting
-            if raw_text.startswith("```"):
-                raw_text = re.sub(r"^```(?:json)?|```$", "", raw_text, flags=re.MULTILINE).strip()
-            
+            # Fetch top 2 TM fuzzy matches
+            tm_examples = ""
             try:
-                result_json = json.loads(raw_text)
-                translated_text = result_json.get("translation", result_json)
-            except json.JSONDecodeError:
-                # LLM output parse error fallback
-                logger.warning(f"Translation JSON parse failed for segment {segment.id}. Falling back to raw text.")
-                translated_text = raw_text
+                retrieval_res = await retrieve_tm_matches(
+                    db=db, project_id=project_id, source_language=source_language,
+                    target_language=target_language, source_text=segment.source_text, top_k=2
+                )
+                matches = retrieval_res.get("matches", [])
+                if matches:
+                    tm_examples = "TRANSLATION MEMORY EXAMPLES (Reference These):\n"
+                    for i, m in enumerate(matches, 1):
+                        tm_examples += f"- Source: {m.get('source_text')}\n- Target: {m.get('target_text')}\n"
+            except Exception as e:
+                logger.warning(f"  TM match fetch failed: {e}")
 
-            segment.translated_text = translated_text
-            # Status kept at 'pending' for heavy human review down the line. 
-            # Note: "add a confidence_score of 0.85 as default for LLM translations"
-            # Since MTQE is not built yet, we could put it in tm_match_score or if Segment has a confidence_score field... Wait, the instructions said: "add a confidence_score of 0.85". Let me check if `Segment` has `confidence_score` or maybe we just jam it into `tm_match_score` or maybe I'll check segment.py. Let's assume Segment.confidence_score exists or could be ignored if not. I'll add `confidence_score` if possible, if not log. I'll try catching the getattr.
-            if hasattr(segment, 'confidence_score'):
+            # Construct prompts
+            sys_instructions = f"You are a professional translator. Translate the source text from {source_language} to {target_language}.\n\nTONE: {tone}\nSTYLE RULES: {custom_rules}\n\n{glossary_text}\n{tm_examples}"
+
+            prompt = f"SOURCE TEXT:\n{segment.source_text}\n\nRespond ONLY with a JSON object in this exact format:\n{{\"translation\": \"your translated text here\", \"glossary_terms_used\": [], \"notes\": \"\"}}"
+
+            try:
+                payload = {
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [
+                        {"role": "system", "content": sys_instructions},
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+
+                logger.info(f"  Calling OpenRouter (gpt-4o-mini) for: '{segment.source_text[:60]}...'")
+
+                resp = await http_client.post(
+                    f"{settings.OPENROUTER_BASE_URL}/chat/completions",
+                    json=payload,
+                    headers=headers
+                )
+
+                logger.info(f"  Response status: {resp.status_code}")
+
+                if resp.status_code != 200:
+                    logger.error(f"  OpenRouter Error {resp.status_code}: {resp.text[:300]}")
+                    skipped_count += 1
+                    segment.status = "error"
+                    continue
+
+                res_json = resp.json()
+                raw_text = res_json["choices"][0]["message"]["content"].strip()
+                logger.info(f"  Raw LLM response: {raw_text[:200]}")
+
+                # Strip markdown code fences if present
+                if raw_text.startswith("```"):
+                    raw_text = re.sub(r"^```(?:json)?|```$", "", raw_text, flags=re.MULTILINE).strip()
+
+                try:
+                    result_json = json.loads(raw_text)
+                    translated_text = result_json.get("translation", raw_text)
+                except json.JSONDecodeError:
+                    logger.warning(f"  JSON parse failed, using raw text as translation")
+                    translated_text = raw_text
+
+                if isinstance(translated_text, dict):
+                    translated_text = str(translated_text)
+
+                segment.translated_text = translated_text
                 segment.confidence_score = 0.85
-            else:
-                # TM Match score can double as a placeholder if no dedicated score field is there yet
-                segment.tm_match_score = 0.85 
+                segment.status = "pending"
+                translated_count += 1
+                logger.info(f"  ✓ Translated: '{translated_text[:80]}...'")
 
-            segment.status = "pending"
-            translated_count += 1
-            
-        except Exception as e:
-            logger.error(f"Failed to translate segment {segment.id}: {e}")
-            segment.status = "error"
-            skipped_count += 1
+            except Exception as e:
+                logger.error(f"  ✗ Failed to translate segment {segment.id}: {e}", exc_info=True)
+                segment.status = "error"
+                skipped_count += 1
+
+    logger.info(f"=== TRANSLATION DONE === Translated: {translated_count} | Skipped: {skipped_count}")
 
     # 5. Bulk commit operation
     # Mark the document ready for final UI review
-    await update_document_status(db, document_id, "review")
+    await update_document_status(db, document_id, "translated")
     await db.commit()
 
     return {

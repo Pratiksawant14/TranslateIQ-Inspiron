@@ -10,6 +10,9 @@ from app.models.telemetry import TelemetrySignal
 from app.services.tm_service import store_tm_entry
 
 async def accept_segment(db: AsyncSession, segment_id: str, target_language: str) -> Segment:
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # Fetch segment and related graph
     seg_query = await db.execute(select(Segment).where(Segment.id == segment_id))
     segment = seg_query.scalars().first()
@@ -42,23 +45,25 @@ async def accept_segment(db: AsyncSession, segment_id: str, target_language: str
         signal_label="desirable"
     )
     db.add(telemetry)
-    
-    # Needs to hit telemetry pre-TM
-    await db.flush()
 
-    # 4. Immediate TM Update
-    if segment.translated_text:
-        await store_tm_entry(
-            db=db,
-            project_id=project.id,
-            source_language=project.source_language,
-            target_language=target_language,
-            source_text=segment.source_text,
-            target_text=segment.translated_text
-        )
-
+    # Commit the segment status change FIRST so the UI reflects it immediately
     await db.commit()
     await db.refresh(segment)
+
+    # 4. TM Update (non-blocking — don't let Qdrant/embedding errors block the accept)
+    if segment.translated_text:
+        try:
+            await store_tm_entry(
+                db=db,
+                project_id=project.id,
+                source_language=project.source_language,
+                target_language=target_language,
+                source_text=segment.source_text,
+                target_text=segment.translated_text
+            )
+        except Exception as e:
+            logger.warning(f"TM storage failed for segment {segment_id} (non-blocking): {e}")
+
     return segment
 
 async def edit_segment(db: AsyncSession, segment_id: str, new_translation: str, target_language: str) -> Segment:
@@ -110,20 +115,24 @@ async def edit_segment(db: AsyncSession, segment_id: str, new_translation: str, 
     )
     db.add(telemetry_desirable)
 
-    await db.flush()
-
-    # 4. Immediate TM Update with corrected translation
-    await store_tm_entry(
-        db=db,
-        project_id=project.id,
-        source_language=project.source_language,
-        target_language=target_language,
-        source_text=segment.source_text,
-        target_text=new_translation
-    )
-
+    # Commit the segment status change FIRST
     await db.commit()
     await db.refresh(segment)
+
+    # 4. TM Update with corrected translation (non-blocking)
+    try:
+        await store_tm_entry(
+            db=db,
+            project_id=project.id,
+            source_language=project.source_language,
+            target_language=target_language,
+            source_text=segment.source_text,
+            target_text=new_translation
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"TM storage failed for edited segment {segment_id} (non-blocking): {e}")
+
     return segment
 
 async def reject_segment(db: AsyncSession, segment_id: str) -> Segment:
@@ -167,6 +176,17 @@ async def get_review_session(db: AsyncSession, document_id: str) -> Dict[str, An
     )
     segments = segments_query.scalars().all()
     
+    # Fetch document and project to get target_language
+    doc_query = await db.execute(select(Document).where(Document.id == document_id))
+    document = doc_query.scalars().first()
+    
+    target_language = None
+    if document:
+        proj_query = await db.execute(select(Project).where(Project.id == document.project_id))
+        project = proj_query.scalars().first()
+        if project:
+            target_language = project.target_language
+    
     total = len(segments)
     approved_count = sum(1 for s in segments if s.status == "approved")
     pending_count = sum(1 for s in segments if s.status == "pending")
@@ -180,5 +200,6 @@ async def get_review_session(db: AsyncSession, document_id: str) -> Dict[str, An
         "pending_count": pending_count,
         "rejected_count": rejected_count,
         "completion_percentage": round(completion_percentage, 2),
+        "target_language": target_language,
         "segments": segments
     }

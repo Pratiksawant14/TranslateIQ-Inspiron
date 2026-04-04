@@ -35,7 +35,7 @@ const Projects = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', source_language: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', source_language: '', target_language: '' });
   const [errors, setErrors] = useState({});
 
   const { data: projects, isLoading, isError } = useQuery({
@@ -49,7 +49,7 @@ const Projects = () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast('Project created successfully', 'success');
       setShowModal(false);
-      setFormData({ name: '', description: '', source_language: '' });
+      setFormData({ name: '', description: '', source_language: '', target_language: '' });
       setErrors({});
     },
     onError: () => {
@@ -227,12 +227,20 @@ const Projects = () => {
               error={errors.source_language}
             />
 
+            <Select
+              label="Target Language"
+              options={LANGUAGE_OPTIONS}
+              value={formData.target_language}
+              onChange={(e) => setFormData({ ...formData, target_language: e.target.value })}
+              error={errors.target_language}
+            />
+
             <div className="flex justify-end gap-3 pt-4 border-t border-[#1E3A5F]/30">
-              <Button variant="ghost" onClick={() => { setShowModal(false); setErrors({}); }}>
+              <Button variant="ghost" type="button" onClick={() => { setShowModal(false); setErrors({}); }}>
                 Cancel
               </Button>
               <Button variant="primary" type="submit" loading={createMutation.isPending}>
-                Create Project
+                {createMutation.isPending ? 'Creating...' : 'Create Project'}
               </Button>
             </div>
           </form>

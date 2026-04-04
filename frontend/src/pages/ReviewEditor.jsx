@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Check,
@@ -30,6 +30,7 @@ import { toast } from '../hooks/useToast';
 
 const ReviewEditor = () => {
   const { projectId, documentId } = useParams();
+  const queryClient = useQueryClient();
   const segmentRefs = useRef({});
   const [exporting, setExporting] = useState(false);
   const [bulkAccepting, setBulkAccepting] = useState(false);
@@ -47,16 +48,23 @@ const ReviewEditor = () => {
   } = useReviewStore();
 
   // Fetch review session
-  const { isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['review-session', projectId, documentId],
     queryFn: () => getReviewSession(projectId, documentId),
-    onSuccess: (data) => {
+  });
+
+  // Extract target language from data
+  const targetLanguage = data?.target_language;
+  
+  // Sync on data load
+  useEffect(() => {
+    if (data?.segments) {
       setSegments(data.segments);
       if (!selectedSegmentId && data.segments.length > 0) {
         setSelectedSegment(data.segments[0].id);
       }
-    },
-  });
+    }
+  }, [data, setSegments, selectedSegmentId, setSelectedSegment]);
 
   // Sync on data load
   useEffect(() => {
@@ -81,9 +89,11 @@ const ReviewEditor = () => {
   const handleAccept = async (segmentId) => {
     updateSegment(segmentId, { status: 'approved' });
     try {
-      await acceptSegment(segmentId, 'Spanish');
+      await acceptSegment(segmentId, targetLanguage);
+      queryClient.invalidateQueries(['review-session', projectId, documentId]);
       toast('Segment approved', 'success');
-    } catch {
+    } catch (error) {
+      console.error('Accept failed:', error);
       updateSegment(segmentId, { status: 'pending' });
       toast('Failed to approve', 'error');
     }
@@ -95,6 +105,7 @@ const ReviewEditor = () => {
     updateSegment(segmentId, { status: 'rejected' });
     try {
       await rejectSegment(segmentId);
+      queryClient.invalidateQueries(['review-session', projectId, documentId]);
       toast('Segment rejected', 'info');
     } catch {
       updateSegment(segmentId, { status: prev || 'pending' });
@@ -107,9 +118,11 @@ const ReviewEditor = () => {
     const prevText = segments.find((s) => s.id === segmentId)?.translated_text;
     updateSegment(segmentId, { status: 'approved', translated_text: newText });
     try {
-      await editSegment(segmentId, newText, 'Spanish');
+      await editSegment(segmentId, newText, targetLanguage);
+      queryClient.invalidateQueries(['review-session', projectId, documentId]);
       toast('Segment edited and approved', 'success');
-    } catch {
+    } catch (error) {
+      console.error('Edit failed:', error);
       updateSegment(segmentId, { status: 'pending', translated_text: prevText });
       toast('Failed to save edit', 'error');
     }
@@ -133,8 +146,9 @@ const ReviewEditor = () => {
     let failed = 0;
     for (const seg of highConf) {
       try {
-        await acceptSegment(seg.id, 'Spanish');
-      } catch {
+        await acceptSegment(seg.id, targetLanguage);
+      } catch (error) {
+        console.error('Bulk accept failed for segment:', seg.id, error);
         failed++;
         updateSegment(seg.id, { status: 'pending' });
       }
@@ -145,6 +159,7 @@ const ReviewEditor = () => {
     } else {
       toast(`${highConf.length} high-confidence segments accepted`, 'success');
     }
+    queryClient.invalidateQueries(['review-session', projectId, documentId]);
     setBulkAccepting(false);
   };
 
