@@ -51,7 +51,7 @@ async def classify_document_segments(
 
         retrieval_result = await retrieve_tm_matches(
             db=db,
-            project_id=project_id,
+            project_id=UUID(project_id),
             source_language=source_language,
             target_language=target_language,
             source_text=segment.source_text,
@@ -63,13 +63,13 @@ async def classify_document_segments(
 
         if match_type == "exact" and best_match:
             segment.tm_match_type = "exact"
-            segment.tm_match_score = best_match.get("combined_score", 1.0)
+            segment.tm_match_score = best_match.get("score", 1.0)
             segment.translated_text = best_match.get("target_text", "")
             segment.status = "approved"
             exact_count += 1
         elif match_type == "fuzzy" and best_match:
             segment.tm_match_type = "fuzzy"
-            segment.tm_match_score = best_match.get("combined_score", 0.0)
+            segment.tm_match_score = best_match.get("score", 0.0)
             segment.translated_text = best_match.get("target_text", "") # as a suggestion
             segment.status = "pending" 
             fuzzy_count += 1

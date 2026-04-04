@@ -38,16 +38,16 @@ import Modal from '../components/ui/Modal';
 import { toast } from '../hooks/useToast';
 
 const LANGUAGE_OPTIONS = [
-  { value: 'English', label: 'English' },
-  { value: 'Spanish', label: 'Spanish' },
-  { value: 'French', label: 'French' },
-  { value: 'German', label: 'German' },
-  { value: 'Japanese', label: 'Japanese' },
-  { value: 'Portuguese', label: 'Portuguese' },
-  { value: 'Italian', label: 'Italian' },
-  { value: 'Arabic', label: 'Arabic' },
-  { value: 'Chinese', label: 'Chinese' },
-  { value: 'Hindi', label: 'Hindi' },
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'it', label: 'Italian' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'hi', label: 'Hindi' },
 ];
 
 const ProjectDetail = () => {
@@ -169,13 +169,13 @@ const ProjectDetail = () => {
     setActionLoading((p) => ({ ...p, [doc.id]: 'classifying' }));
     try {
       // Classify first
-      await classifyDocument(projectId, doc.id, project.source_language, targetLanguage || 'Spanish');
+      await classifyDocument(projectId, doc.id, project.source_language, targetLanguage || 'es');
 
       setActionLoading((p) => ({ ...p, [doc.id]: 'translating' }));
       // Translate
       const result = await translateDocument(projectId, doc.id, {
         source_language: project.source_language,
-        target_language: targetLanguage || 'Spanish',
+        target_language: targetLanguage || 'es',
       });
 
       queryClient.invalidateQueries({ queryKey: ['documents', projectId] });
@@ -192,7 +192,7 @@ const ProjectDetail = () => {
     if (!project) return;
     setActionLoading((p) => ({ ...p, [doc.id]: 'scoring' }));
     try {
-      await scoreDocument(projectId, doc.id, project.target_language || 'Spanish');
+      await scoreDocument(projectId, doc.id, project.target_language || 'es');
       queryClient.invalidateQueries({ queryKey: ['documents', projectId] });
       toast('Quality scoring complete', 'success');
       navigate(`/projects/${projectId}/documents/${doc.id}/review`);

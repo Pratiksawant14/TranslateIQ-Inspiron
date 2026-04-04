@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import uuid
 from typing import Dict, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -103,13 +104,17 @@ async def translate_document_segments(
 
             # Fetch top 2 TM fuzzy matches
             tm_examples = ""
+            best_tm_score = 0.0
+            has_tm_context = False
             try:
                 retrieval_res = await retrieve_tm_matches(
-                    db=db, project_id=project_id, source_language=source_language,
+                    db=db, project_id=uuid.UUID(project_id), source_language=source_language,
                     target_language=target_language, source_text=segment.source_text, top_k=2
                 )
                 matches = retrieval_res.get("matches", [])
                 if matches:
+                    has_tm_context = True
+                    best_tm_score = matches[0].get("score", 0.0)
                     tm_examples = "TRANSLATION MEMORY EXAMPLES (Reference These):\n"
                     for i, m in enumerate(matches, 1):
                         tm_examples += f"- Source: {m.get('source_text')}\n- Target: {m.get('target_text')}\n"
@@ -165,10 +170,19 @@ async def translate_document_segments(
                     translated_text = str(translated_text)
 
                 segment.translated_text = translated_text
-                segment.confidence_score = 0.85
+
+                # Derive initial confidence from TM context availability
+                # TM-backed translations get a boost proportional to match quality
+                if has_tm_context and best_tm_score > 0:
+                    # Scale: strong fuzzy match (0.95) → 0.92 confidence, weaker match (0.75) → 0.78
+                    segment.confidence_score = round(0.5 + (best_tm_score * 0.45), 2)
+                else:
+                    # Pure LLM translation with no TM backing — lower initial confidence
+                    segment.confidence_score = 0.65
+
                 segment.status = "pending"
                 translated_count += 1
-                logger.info(f"  ✓ Translated: '{translated_text[:80]}...'")
+                logger.info(f"  ✓ Translated (conf={segment.confidence_score}): '{translated_text[:80]}...'")
 
             except Exception as e:
                 logger.error(f"  ✗ Failed to translate segment {segment.id}: {e}", exc_info=True)

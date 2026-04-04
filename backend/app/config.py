@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     EXPORTS_DIR: str = "exports"
     MATCH_EXACT_THRESHOLD: float = 0.98
-    MATCH_FUZZY_THRESHOLD: float = 0.75
+    MATCH_FUZZY_THRESHOLD: float = 0.85
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

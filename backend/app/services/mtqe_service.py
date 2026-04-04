@@ -65,17 +65,23 @@ async def score_document_segments(db: AsyncSession, document_id: str, project_id
     review_needed_count = 0
 
     for segment in segments:
-        new_score = score_segment(
+        mtqe_score = score_segment(
             source_text=segment.source_text or "",
             translated_text=segment.translated_text or "",
             glossary_terms=glossary_entries
         )
         
-        segment.confidence_score = new_score
-        scored_count += 1
-        total_confidence += new_score
+        # Blend the initial confidence (from TM matches) with the MTQE score
+        # 60% weight to initial confidence (translation quality/TM backing)
+        # 40% weight to MTQE (sanity checks: length, glossary, etc.)
+        initial_conf = segment.confidence_score if segment.confidence_score is not None else 0.65
+        final_score = round((initial_conf * 0.6) + (mtqe_score * 0.4), 2)
         
-        if new_score < 0.85:
+        segment.confidence_score = final_score
+        scored_count += 1
+        total_confidence += final_score
+        
+        if final_score < 0.85:
             review_needed_count += 1
 
     if scored_count > 0:
