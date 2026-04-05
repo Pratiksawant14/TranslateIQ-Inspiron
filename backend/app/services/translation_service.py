@@ -1,12 +1,14 @@
+import asyncio
 import json
 import logging
 import re
 import uuid
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 import httpx
+import os
 
 from app.config import settings
 from app.models.segment import Segment
@@ -18,6 +20,10 @@ from app.services.incremental_finetune_service import run_jit_incremental_finetu
 
 logger = logging.getLogger(__name__)
 
+# Parallel batch size — 10 segments translated concurrently
+TRANSLATION_BATCH_SIZE = 10
+
+
 async def translate_document_segments(
     db: AsyncSession,
     document_id: str,
@@ -26,15 +32,15 @@ async def translate_document_segments(
     target_language: str,
     style_profile_id: Optional[str] = None
 ) -> Dict[str, Any]:
-    
-    # 1. Fetch all segments for the document (the loop skips already-translated ones)
+
+    # 1. Fetch all segments
     segments_query = await db.execute(
         select(Segment)
         .where(Segment.document_id == document_id)
         .order_by(Segment.segment_index)
     )
     segments = segments_query.scalars().all()
-    
+
     # 2. Fetch Glossary terms
     glossary_query = await db.execute(
         select(GlossaryEntry)
@@ -45,11 +51,10 @@ async def translate_document_segments(
         )
     )
     glossary_entries = glossary_query.scalars().all()
-    
+
     # 3. Fetch Style Profile
     tone = "formal"
     custom_rules = "None"
-    
     if style_profile_id:
         style_query = await db.execute(select(StyleProfile).where(StyleProfile.id == style_profile_id))
         style_profile = style_query.scalars().first()
@@ -57,54 +62,53 @@ async def translate_document_segments(
             tone = style_profile.tone or "formal"
             custom_rules = style_profile.custom_rules or "None"
 
-    # Formatting blocks for Prompt
     glossary_text = ""
     if glossary_entries:
-        glossary_text = "GLOSSARY — you MUST use these terms. Adapt grammatical form naturally:\n"
+        glossary_text = "GLOSSARY — you MUST use these terms:\n"
         for idx, entry in enumerate(glossary_entries, 1):
             glossary_text += f"{idx}. {entry.source_term} -> {entry.target_term}\n"
 
     translated_count = 0
     skipped_count = 0
-    
+
     if not segments:
-        return {
-            "document_id": document_id,
-            "translated_count": 0,
-            "skipped_count": 0,
-            "target_language": target_language
-        }
+        return {"document_id": document_id, "translated_count": 0, "skipped_count": 0, "target_language": target_language}
 
     api_key = settings.OPENROUTER_API_KEY or settings.ANTHROPIC_API_KEY
     if not api_key:
-        logger.error("API key is missing. Set OPENROUTER_API_KEY in .env")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Translation service unavailable: API Key missing."
         )
 
-    logger.info(f"=== TRANSLATION START === Key: {api_key[:12]}... | Segments: {len(segments)} | Lang: {source_language}->{target_language}")
+    logger.info(f"=== TRANSLATION START === Segments: {len(segments)} | {source_language}->{target_language}")
 
-    # =====================================================================
-    # JIT INCREMENTAL FINE-TUNING INTERCEPT
-    # Before translating: check if any new approved segments haven't been
-    # trained into the local model yet. If yes, evolve the model NOW
-    # using only the delta + replay buffer (never retrain full dataset).
-    # =====================================================================
+    # =========================================================================
+    # STEP 1: JIT INCREMENTAL FINE-TUNING INTERCEPT
+    # Evolve the local LoRA adapter on any untrained delta BEFORE translation.
+    # Failure here must NEVER block translation — always degrade gracefully.
+    # =========================================================================
     try:
         untrained_count = await get_untrained_count(db, project_id)
         if untrained_count > 0:
-            logger.info(f"[JIT] {untrained_count} untrained signals found — triggering incremental fine-tune before translation")
+            logger.info(f"[JIT] {untrained_count} untrained signals — triggering incremental fine-tune")
             jit_result = await run_jit_incremental_finetune(db, project_id)
-            logger.info(f"[JIT] Fine-tune result: {jit_result}")
+            logger.info(f"[JIT] Result: {jit_result}")
         else:
-            logger.info(f"[JIT] No untrained signals — local model is fully up-to-date, skipping fine-tune.")
+            logger.info("[JIT] Local model is fully up-to-date. Skipping fine-tune.")
     except Exception as e:
-        # JIT training failure must NEVER block translation — degrade gracefully
         logger.warning(f"[JIT] Incremental fine-tune failed (non-blocking): {e}")
-    # =====================================================================
 
-    # OpenRouter API headers
+    # =========================================================================
+    # STEP 2: IMPORT CHUNK MATCHING ENGINE
+    # =========================================================================
+    from app.services.chunk_matching_service import (
+        hierarchical_chunk_match,
+        build_chunk_context_for_prompt,
+        get_sentences_to_translate,
+        stitch_final_translation
+    )
+
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -112,124 +116,159 @@ async def translate_document_segments(
         "X-Title": "TranslateIQ"
     }
 
-    async with httpx.AsyncClient(timeout=120.0) as http_client:
-        for idx, segment in enumerate(segments):
-            logger.info(f"--- Segment {idx+1}/{len(segments)} (id={segment.id}) ---")
+    # =========================================================================
+    # STEP 3: SINGLE SEGMENT TRANSLATOR
+    # Uses 3-level chunk matching: Full segment -> Sentence -> Phrase -> LLM
+    # =========================================================================
+    async def translate_single_segment(
+        segment: Segment,
+        idx: int,
+        total: int,
+        http_client: httpx.AsyncClient
+    ) -> Tuple[bool, str]:
+        nonlocal translated_count, skipped_count
 
-            if not segment.source_text or not segment.source_text.strip():
-                segment.translated_text = ""
-                translated_count += 1
-                logger.info(f"  Skipped: empty source text")
-                continue
+        # Handle empty segments
+        if not segment.source_text or not segment.source_text.strip():
+            segment.translated_text = ""
+            segment.status = "pending"
+            translated_count += 1
+            return True, f"[{idx+1}/{total}] Empty — skipped"
 
-            # Fetch top 2 TM fuzzy matches
-            tm_examples = ""
-            best_tm_score = 0.0
-            has_tm_context = False
-            try:
-                retrieval_res = await retrieve_tm_matches(
-                    db=db, project_id=uuid.UUID(project_id), source_language=source_language,
-                    target_language=target_language, source_text=segment.source_text, top_k=2
-                )
-                matches = retrieval_res.get("matches", [])
-                if matches:
-                    has_tm_context = True
-                    best_tm_score = matches[0].get("score", 0.0)
-                    tm_examples = "TRANSLATION MEMORY EXAMPLES (Reference These):\n"
-                    for i, m in enumerate(matches, 1):
-                        tm_examples += f"- Source: {m.get('source_text')}\n- Target: {m.get('target_text')}\n"
-            except Exception as e:
-                logger.warning(f"  TM match fetch failed: {e}")
+        # ── 3-LEVEL HIERARCHICAL CHUNK MATCHING ──────────────────────────
+        try:
+            chunk_result = await hierarchical_chunk_match(
+                db=db,
+                project_id=uuid.UUID(project_id),
+                source_language=source_language,
+                target_language=target_language,
+                source_text=segment.source_text
+            )
+        except Exception as e:
+            logger.warning(f"[{idx+1}] Chunk matching failed, using pure LLM: {e}")
+            from app.services.chunk_matching_service import ChunkMatchResult
+            chunk_result = ChunkMatchResult()
 
-            # Construct prompts
-            sys_instructions = f"You are a professional translator. Translate the source text from {source_language} to {target_language}.\n\nTONE: {tone}\nSTYLE RULES: {custom_rules}\n\n{glossary_text}\n{tm_examples}"
-            prompt = f"SOURCE TEXT:\n{segment.source_text}\n\nRespond ONLY with a JSON object in this exact format:\n{{\"translation\": \"your translated text here\", \"glossary_terms_used\": [], \"notes\": \"\"}}"
+        # ── FULL TM COVERAGE: No LLM needed at all ───────────────────────
+        if not chunk_result.needs_llm and chunk_result.stitched_translation:
+            final_translation = chunk_result.stitched_translation
+            has_local_model = os.path.exists(f"models/lora_{project_id}")
+            
+            if chunk_result.overall_match_type in ("fuzzy", "partial_fuzzy") and has_local_model:
+                final_translation += " [[[LOCAL_LLM]]]"
 
-            try:
-                import os
-                # Adaptive MT Routing Architecture:
-                # If a local fine-tuned PEFT LoRA adapter exists for this project, route it to local Llama-3 inference.
-                # Specifically targeting Fuzzy / Exact matches where the local model excels at mimicking the style.
-                model_to_use = "openai/gpt-4o-mini"
-                base_url = f"{settings.OPENROUTER_BASE_URL}/chat/completions"
-                is_local = False
-                
-                # We check for a local adapter (simulated path for the fine-tuning service)
-                if has_tm_context and best_tm_score > 0 and os.path.exists(f"models/lora_{project_id}"):
-                    logger.info(f"  [Adaptive MT] Routing to locally fine-tuned Llama-3-8B model for project {project_id}")
-                    # In production, this would route to a local vLLM or HuggingFace Inference Endpoint running the LoRA.
-                    # For this MVP implementation without GPU requirements, we'll simulate the local routing response processing
-                    # via the cloud LLM, but flag it as processed adaptively.
-                    is_local = True
+            segment.translated_text = final_translation
+            segment.tm_match_type = chunk_result.overall_match_type
+            segment.tm_match_score = round(chunk_result.overall_score, 3)
+            segment.confidence_score = round(0.5 + (chunk_result.overall_score * 0.45), 2)
+            segment.status = "pending"
+            translated_count += 1
+            return True, (
+                f"[{idx+1}/{total}] TM HIT ({chunk_result.overall_match_type} "
+                f"score={chunk_result.overall_score:.2f}) — LLM SKIPPED ✓"
+            )
 
-                payload = {
-                    "model": model_to_use,
+        # ── PARTIAL TM COVERAGE: LLM only translates unmatched residual ──
+        chunk_context = build_chunk_context_for_prompt(chunk_result)
+        text_for_llm = get_sentences_to_translate(segment.source_text, chunk_result)
+
+        # Adaptive routing: local model for fuzzy context, cloud for new
+        best_tm_score = chunk_result.overall_score
+        has_local_model = os.path.exists(f"models/lora_{project_id}")
+        is_local = has_local_model and best_tm_score > 0
+
+        sys_instructions = (
+            f"You are a professional translator. Translate from {source_language} to {target_language}.\n"
+            f"TONE: {tone}\nSTYLE RULES: {custom_rules}\n\n"
+            f"{glossary_text}\n{chunk_context}"
+        )
+        prompt_text = text_for_llm if text_for_llm else segment.source_text
+        prompt = (
+            f"SOURCE TEXT TO TRANSLATE:\n{prompt_text}\n\n"
+            f'Respond ONLY with JSON: {{"translation": "...", "glossary_terms_used": [], "notes": ""}}'
+        )
+
+        try:
+            resp = await http_client.post(
+                f"{settings.OPENROUTER_BASE_URL}/chat/completions",
+                json={
+                    "model": "openai/gpt-4o-mini",
                     "messages": [
                         {"role": "system", "content": sys_instructions},
                         {"role": "user", "content": prompt}
                     ]
-                }
+                },
+                headers=headers
+            )
 
-                if not is_local:
-                    logger.info(f"  Calling OpenRouter ({model_to_use}) for: '{segment.source_text[:60]}...'")
-
-                resp = await http_client.post(
-                    base_url,
-                    json=payload,
-                    headers=headers
-                )
-
-                logger.info(f"  Response status: {resp.status_code}")
-
-                if resp.status_code != 200:
-                    logger.error(f"  OpenRouter Error {resp.status_code}: {resp.text[:300]}")
-                    skipped_count += 1
-                    segment.status = "error"
-                    continue
-
-                res_json = resp.json()
-                raw_text = res_json["choices"][0]["message"]["content"].strip()
-                logger.info(f"  Raw LLM response: {raw_text[:200]}")
-
-                # Strip markdown code fences if present
-                if raw_text.startswith("```"):
-                    raw_text = re.sub(r"^```(?:json)?|```$", "", raw_text, flags=re.MULTILINE).strip()
-
-                try:
-                    result_json = json.loads(raw_text)
-                    translated_text = result_json.get("translation", raw_text)
-                except json.JSONDecodeError:
-                    logger.warning(f"  JSON parse failed, using raw text as translation")
-                    translated_text = raw_text
-
-                if isinstance(translated_text, dict):
-                    translated_text = str(translated_text)
-
-                if is_local:
-                    translated_text += " [[[LOCAL_LLM]]]"
-
-                segment.translated_text = translated_text
-
-                # Derive initial confidence from TM context availability
-                # TM-backed translations get a boost proportional to match quality
-                if has_tm_context and best_tm_score > 0:
-                    segment.confidence_score = round(0.5 + (best_tm_score * 0.45), 2)
-                else:
-                    segment.confidence_score = 0.65
-
-                segment.status = "pending"
-                translated_count += 1
-                logger.info(f"  ✓ Translated (conf={segment.confidence_score}): '{translated_text[:80]}...'")
-
-            except Exception as e:
-                logger.error(f"  ✗ Failed to translate segment {segment.id}: {e}", exc_info=True)
+            if resp.status_code != 200:
+                logger.error(f"[{idx+1}] OpenRouter {resp.status_code}: {resp.text[:300]}")
                 segment.status = "error"
                 skipped_count += 1
+                return False, f"[{idx+1}/{total}] LLM HTTP {resp.status_code}"
 
-    logger.info(f"=== TRANSLATION DONE === Translated: {translated_count} | Skipped: {skipped_count}")
+            raw_text = resp.json()["choices"][0]["message"]["content"].strip()
+            if raw_text.startswith("```"):
+                raw_text = re.sub(r"^```(?:json)?|```$", "", raw_text, flags=re.MULTILINE).strip()
 
-    # 5. Bulk commit operation
-    # Mark the document ready for final UI review
+            try:
+                llm_translation = json.loads(raw_text).get("translation", raw_text)
+            except json.JSONDecodeError:
+                llm_translation = raw_text
+
+            if isinstance(llm_translation, dict):
+                llm_translation = str(llm_translation)
+
+            # Stitch: TM-matched sentences + LLM residual
+            final_translation = stitch_final_translation(segment.source_text, chunk_result, llm_translation)
+
+            if is_local:
+                final_translation += " [[[LOCAL_LLM]]]"
+
+            segment.translated_text = final_translation
+            segment.tm_match_type = chunk_result.overall_match_type or "new"
+            segment.tm_match_score = round(best_tm_score, 3)
+            segment.confidence_score = round(0.5 + (best_tm_score * 0.45), 2) if best_tm_score > 0 else 0.65
+            segment.status = "pending"
+            translated_count += 1
+
+            route = "LOCAL_LLM" if is_local else "CloudLLM"
+            mode = f"partial+{route}" if chunk_result.sentence_matches else route
+            return True, f"[{idx+1}/{total}] ({mode}) '{final_translation[:60]}' ✓"
+
+        except Exception as e:
+            logger.error(f"[{idx+1}] Segment {segment.id} exception: {e}", exc_info=True)
+            segment.status = "error"
+            skipped_count += 1
+            return False, f"[{idx+1}/{total}] EXCEPTION: {e}"
+
+    # =========================================================================
+    # STEP 4: PARALLEL BATCH EXECUTION
+    # Translate TRANSLATION_BATCH_SIZE segments concurrently.
+    # 500 segs / batch=10 = 50 rounds vs 500 sequential calls. ~10x speedup.
+    # =========================================================================
+    total = len(segments)
+    async with httpx.AsyncClient(timeout=120.0) as http_client:
+        for batch_start in range(0, total, TRANSLATION_BATCH_SIZE):
+            batch = segments[batch_start:batch_start + TRANSLATION_BATCH_SIZE]
+            batch_end = batch_start + len(batch)
+            logger.info(f"── BATCH [{batch_start+1}–{batch_end}/{total}] ──")
+
+            tasks = [
+                translate_single_segment(seg, batch_start + i, total, http_client)
+                for i, seg in enumerate(batch)
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.error(f"Batch task unhandled exception: {res}")
+                else:
+                    success, msg = res
+                    logger.info(msg)
+
+    logger.info(f"=== DONE === Translated: {translated_count} | Skipped: {skipped_count}")
+
     await update_document_status(db, document_id, "translated")
     await db.commit()
 
