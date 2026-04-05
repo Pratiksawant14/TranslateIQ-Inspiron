@@ -1,9 +1,9 @@
-source_term,target_term,context_notes
-Simplify Healthcare,Simplify Healthcare,Do not translate company name
-Healthcare Payers,Pagadores de Atención Médica,Industry term
-Benefit Plan Management,Gestión de Planes de Beneficios,Core product module
-Provider Lifecycle,Ciclo de Vida del Proveedor,Core product module
-Claims Configuration,Configuración de Reclamos,Core product module
-No Surprises Act,Ley Sin Sorpresas,US federal regulation
-CMS guidelines,Pautas de CMS,US federal regulation abbreviation
-conversational AI,IA conversacional,Tech terminology
+source_language,target_language,source_term,target_term,context_notes
+English,Spanish,Simplify Healthcare,Simplify Healthcare,Do not translate company name
+English,Spanish,Healthcare Payers,Pagadores de Atención Médica,Industry term
+English,Spanish,Benefit Plan Management,Gestión de Planes de Beneficios,Core product module
+English,Spanish,Provider Lifecycle,Ciclo de Vida del Proveedor,Core product module
+English,Spanish,Claims Configuration,Configuración de Reclamos,Core product module
+English,Spanish,No Surprises Act,Ley Sin Sorpresas,US federal regulation
+English,Spanish,CMS guidelines,Pautas de CMS,US federal regulation abbreviation
+English,Spanish,conversational AI,IA conversacional,Tech terminology
