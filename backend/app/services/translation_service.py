@@ -20,6 +20,74 @@ from app.services.incremental_finetune_service import run_jit_incremental_finetu
 
 logger = logging.getLogger(__name__)
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+class LocalInferenceManager:
+    _instance = None
+    _lock = asyncio.Lock()
+    
+    def __init__(self):
+        self.model = None
+        self.tokenizer = None
+        self.current_project = None
+        
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    async def generate_translation(self, project_id: str, prompt_text: str) -> str:
+        async with self._lock:  # Enforce 1-by-1 Queue to prevent crashing CPU
+            try:
+                return await asyncio.to_thread(self._run_inference_sync, project_id, prompt_text)
+            except Exception as e:
+                logger.error(f"Local inference failed: {e}")
+                return ""
+
+    def _run_inference_sync(self, project_id: str, text: str) -> str:
+        try:
+            import torch
+            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+            from peft import PeftModel
+        except ImportError:
+            logger.warning("Transformers/PEFT not installed. Simulating local execution.")
+            import time
+            time.sleep(1.0) # Simulate CPU math time
+            return text + " [Simulated_Local_Translation]"
+
+        adapter_dir = f"models/lora_{project_id}"
+        # Hardcoding the base model matching our JIT service
+        model_name = "Helsinki-NLP/opus-mt-en-es"
+
+        if self.model is None or self.current_project != project_id:
+            logger.info(f"[Local Model] Loading base model + adapter into RAM for project {project_id}...")
+            base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            
+            adapter_conf = os.path.join(adapter_dir, "adapter_config.json")
+            if os.path.exists(adapter_conf):
+                # Verify it's a real PEFT adapter and not our simulation marker
+                with open(adapter_conf, "r") as f:
+                    conf_data = json.load(f)
+                if conf_data.get("model_type") == "lora_simulation":
+                    logger.warning("[Local Model] Found simulation marker. Bypassing PEFT inject.")
+                    import time
+                    time.sleep(1.0)
+                    return text + " [Simulated_Local_Translation]"
+                else:    
+                    self.model = PeftModel.from_pretrained(base_model, adapter_dir)
+            else:
+                self.model = base_model
+                
+            self.current_project = project_id
+            logger.info("[Local Model] Initialization complete.")
+            
+        inputs = self.tokenizer(text, return_tensors="pt", max_length=512, truncation=True)
+        # Prevent the token limit warnings and enforce deterministic length outputs
+        outputs = self.model.generate(**inputs, max_new_tokens=256)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+
 # Parallel batch size — 10 segments translated concurrently
 TRANSLATION_BATCH_SIZE = 10
 
@@ -204,35 +272,43 @@ async def translate_document_segments(
         )
 
         try:
-            resp = await http_client.post(
-                f"{settings.OPENROUTER_BASE_URL}/chat/completions",
-                json={
-                    "model": "openai/gpt-4o-mini",
-                    "messages": [
-                        {"role": "system", "content": sys_instructions},
-                        {"role": "user", "content": prompt}
-                    ]
-                },
-                headers=headers
-            )
+            if is_local:
+                logger.info(f"[{idx+1}] Routing to local model inference queue...")
+                manager = LocalInferenceManager.get_instance()
+                llm_translation = await manager.generate_translation(project_id, prompt_text)
+                if not llm_translation: # Fallback if local crashes
+                    is_local = False
+            
+            if not is_local:
+                resp = await http_client.post(
+                    f"{settings.OPENROUTER_BASE_URL}/chat/completions",
+                    json={
+                        "model": "openai/gpt-4o-mini",
+                        "messages": [
+                            {"role": "system", "content": sys_instructions},
+                            {"role": "user", "content": prompt}
+                        ]
+                    },
+                    headers=headers
+                )
 
-            if resp.status_code != 200:
-                logger.error(f"[{idx+1}] OpenRouter {resp.status_code}: {resp.text[:300]}")
-                segment.status = "error"
-                skipped_count += 1
-                return False, f"[{idx+1}/{total}] LLM HTTP {resp.status_code}"
+                if resp.status_code != 200:
+                    logger.error(f"[{idx+1}] OpenRouter {resp.status_code}: {resp.text[:300]}")
+                    segment.status = "error"
+                    skipped_count += 1
+                    return False, f"[{idx+1}/{total}] LLM HTTP {resp.status_code}"
 
-            raw_text = resp.json()["choices"][0]["message"]["content"].strip()
-            if raw_text.startswith("```"):
-                raw_text = re.sub(r"^```(?:json)?|```$", "", raw_text, flags=re.MULTILINE).strip()
+                raw_text = resp.json()["choices"][0]["message"]["content"].strip()
+                if raw_text.startswith("```"):
+                    raw_text = re.sub(r"^```(?:json)?|```$", "", raw_text, flags=re.MULTILINE).strip()
 
-            try:
-                llm_translation = json.loads(raw_text).get("translation", raw_text)
-            except json.JSONDecodeError:
-                llm_translation = raw_text
+                try:
+                    llm_translation = json.loads(raw_text).get("translation", raw_text)
+                except json.JSONDecodeError:
+                    llm_translation = raw_text
 
-            if isinstance(llm_translation, dict):
-                llm_translation = str(llm_translation)
+                if isinstance(llm_translation, dict):
+                    llm_translation = str(llm_translation)
 
             # Stitch: TM-matched sentences + LLM residual
             final_translation = stitch_final_translation(segment.source_text, chunk_result, llm_translation)

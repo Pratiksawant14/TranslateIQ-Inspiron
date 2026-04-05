@@ -1,0 +1,18 @@
+{
+  "matches": [
+    {
+      "source_text": "CloudSync requires a minimum of 4GB RAM to operate.",
+      "target_text": "CloudSync requiere un m\u00ednimo de 4 GB de RAM para funcionar.",
+      "match_type": "fuzzy",
+      "score": 0.97336757
+    }
+  ],
+  "has_exact": false,
+  "best_match_type": "fuzzy",
+  "best_match": {
+    "source_text": "CloudSync requires a minimum of 4GB RAM to operate.",
+    "target_text": "CloudSync requiere un m\u00ednimo de 4 GB de RAM para funcionar.",
+    "match_type": "fuzzy",
+    "score": 0.97336757
+  }
+}
