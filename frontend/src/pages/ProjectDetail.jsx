@@ -256,44 +256,97 @@ const ProjectDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <Link to="/projects" className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-sm mb-3">
+      {/* Hero Header */}
+      <div
+        className="rounded-2xl p-9 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 40%, #7C3AED 100%)',
+        }}
+      >
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)', transform: 'translate(30%, -30%)' }}
+        />
+        <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-8"
+          style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)', transform: 'translate(-20%, 40%)' }}
+        />
+
+        <div className="relative z-10">
+          <Link to="/projects" className="inline-flex items-center text-indigo-200 hover:text-white transition-colors text-sm mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects
           </Link>
-          <h1 className="font-display text-[28px] font-bold text-[var(--color-text-primary)]">{project.name}</h1>
-          <div className="flex items-center gap-3 mt-2">
-            <Badge variant="fuzzy">{project.source_language}</Badge>
-            {project.description && (
-              <span className="text-[var(--color-text-muted)] text-sm">{project.description}</span>
-            )}
+
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-5">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
+              >
+                <FileText className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="font-display text-[30px] font-bold text-white leading-tight">{project.name}</h1>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}>
+                    {project.source_language}
+                  </span>
+                  {project.description && (
+                    <span className="text-indigo-200 text-sm">{project.description}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setShowUploadModal(true)}
+              className="!bg-white !text-indigo-600 hover:!bg-indigo-50 !px-6 !py-3"
+            >
+              <Upload className="w-5 h-5 mr-2" />
+              Upload Document
+            </Button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-5 mt-7">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.12)' }}>
+              <FileText className="w-4 h-4 text-indigo-200" />
+              <span className="text-white text-sm font-semibold">{documents?.length || 0} documents</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.12)' }}>
+              <Sparkles className="w-4 h-4 text-indigo-200" />
+              <span className="text-white text-sm font-semibold">
+                {(documents || []).reduce((sum, d) => sum + (d.total_segments || 0), 0)} segments
+              </span>
+            </div>
           </div>
         </div>
-        <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-          <Upload className="w-4 h-4 mr-2" />
-          Upload Document
-        </Button>
       </div>
 
       {/* Documents Section */}
       <div>
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display font-semibold text-[var(--color-text-primary)] text-lg">Documents</h2>
-          <span className="text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)] px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-3 mb-5">
+          <h2 className="font-display font-bold text-xl" style={{ color: 'var(--color-text-primary)' }}>Documents</h2>
+          <span
+            className="text-xs font-semibold px-3 py-1 rounded-full"
+            style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+          >
             {documents?.length || 0}
           </span>
         </div>
 
         {(!documents || documents.length === 0) ? (
-          <Card className="p-12 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
-              <FileText className="w-8 h-8 text-[var(--color-text-muted)]" />
+          <Card className="p-16 flex flex-col items-center justify-center text-center">
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+              style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)', border: '1px solid #C7D2FE' }}
+            >
+              <FileText className="w-10 h-10" style={{ color: '#4F46E5' }} />
             </div>
-            <h3 className="text-xl font-display font-semibold text-[var(--color-text-primary)] mb-2">No documents yet</h3>
-            <p className="text-[var(--color-text-muted)] mb-6">Upload a PDF or DOCX to begin the translation pipeline.</p>
-            <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-              <Upload className="w-4 h-4 mr-2" /> Upload Document
+            <h3 className="text-2xl font-display font-bold mb-3" style={{ color: 'var(--color-text-primary)' }}>No documents yet</h3>
+            <p className="mb-8 max-w-md" style={{ color: 'var(--color-text-secondary)' }}>Upload a PDF or DOCX to begin the translation pipeline.</p>
+            <Button variant="primary" size="lg" onClick={() => setShowUploadModal(true)} className="!px-8 !py-3">
+              <Upload className="w-5 h-5 mr-2" /> Upload Document
             </Button>
           </Card>
         ) : (
@@ -526,39 +579,59 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
   };
 
   return (
-    <Card 
-      className="px-6 py-4 hover:border-blue-500/50 transition-all group/card" 
+    <div
+      className="rounded-2xl border overflow-hidden transition-all duration-300 cursor-pointer group/card hover:-translate-y-0.5 hover:shadow-lg"
       onClick={handleCardClick}
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.88)',
+        backdropFilter: 'blur(8px)',
+        borderColor: 'var(--color-border)',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#818CF8'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[var(--color-bg-elevated)] flex items-center justify-center shrink-0 group-hover/card:bg-indigo-50 transition-colors">
+      <div className="px-7 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-5">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+            style={{
+              backgroundColor: doc.file_type === 'pdf' ? '#FEF2F2' : '#EFF6FF',
+              border: `1px solid ${doc.file_type === 'pdf' ? '#FECACA' : '#BFDBFE'}`,
+            }}
+          >
             {getFileIcon()}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-medium text-[var(--color-text-primary)] group-hover/card:text-blue-400 transition-colors">{doc.filename}</p>
-              <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-secondary)] group-hover/card:text-blue-400 opacity-0 group-hover/card:opacity-100 transition-all -translate-x-2 group-hover/card:translate-x-0" />
+              <p className="font-semibold text-base group-hover/card:text-indigo-600 transition-colors" style={{ color: 'var(--color-text-primary)' }}>
+                {doc.filename}
+              </p>
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover/card:opacity-100 transition-all -translate-x-2 group-hover/card:translate-x-0" style={{ color: '#6366F1' }} />
             </div>
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-4 mt-1.5">
               <StatusBadge status={doc.status} />
-              <span className="text-xs text-[var(--color-text-secondary)]">{doc.total_segments || 0} segments</span>
-              <span className="text-xs text-[var(--color-text-secondary)]">{formatDate(doc.created_at)}</span>
+              <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                {doc.total_segments || 0} segments
+              </span>
+              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                {formatDate(doc.created_at)}
+              </span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {renderActions()}
-          <button 
-            className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-red-400/10 rounded transition-colors ml-2"
+          <button
+            className="p-2 rounded-lg transition-all opacity-0 group-hover/card:opacity-100 hover:bg-red-50 hover:text-red-500"
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             title="Delete Document"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
