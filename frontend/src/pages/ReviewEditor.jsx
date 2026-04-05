@@ -236,7 +236,7 @@ const ReviewEditor = () => {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-400 mx-auto mb-4" />
-          <p className="text-slate-400">Loading review session...</p>
+          <p className="text-[var(--color-text-muted)]">Loading review session...</p>
         </div>
       </div>
     );
@@ -246,13 +246,13 @@ const ReviewEditor = () => {
   if (isError) {
     return (
       <div className="space-y-6">
-        <Link to={`/projects/${projectId}`} className="inline-flex items-center text-slate-400 hover:text-white text-sm">
+        <Link to={`/projects/${projectId}`} className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-sm">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Project
         </Link>
         <Card className="p-8 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Failed to load review session</h3>
-          <p className="text-slate-400">Run the scoring step first before opening the editor.</p>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Failed to load review session</h3>
+          <p className="text-[var(--color-text-muted)]">Run the scoring step first before opening the editor.</p>
         </Card>
       </div>
     );
@@ -261,14 +261,14 @@ const ReviewEditor = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] -m-6">
       {/* Top Bar */}
-      <div className="bg-[#0F1B2D] border-b border-[#1E3A5F] px-6 py-3 flex items-center justify-between shrink-0">
+      <div className="bg-[var(--color-bg-base)] border-b border-[var(--color-border)] px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
-          <Link to={`/projects/${projectId}`} className="text-slate-400 hover:text-white transition-colors">
+          <Link to={`/projects/${projectId}`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h2 className="font-display font-semibold text-white text-lg">Review Editor</h2>
-            <p className="text-xs text-slate-500">Segment-by-segment translation review</p>
+            <h2 className="font-display font-semibold text-[var(--color-text-primary)] text-lg">Review Editor</h2>
+            <p className="text-xs text-[var(--color-text-secondary)]">Segment-by-segment translation review</p>
           </div>
         </div>
         <div className="flex items-center gap-6">
@@ -276,7 +276,7 @@ const ReviewEditor = () => {
             <div className="w-40">
               <ProgressBar value={stats.completion} color={stats.completion === 100 ? 'green' : 'blue'} />
             </div>
-            <span className="text-sm text-slate-300 whitespace-nowrap">
+            <span className="text-sm text-[var(--color-text-secondary)] whitespace-nowrap">
               {stats.approved} / {stats.total}
             </span>
           </div>
@@ -292,7 +292,7 @@ const ReviewEditor = () => {
         </div>
       </div>
 
-      <div className="bg-[#0A1628] border-b border-[#1E3A5F]/50 px-6 py-2 flex items-center justify-between shrink-0">
+      <div className="bg-[var(--color-bg-surface)] border-b border-[var(--color-border)]/50 px-6 py-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -322,7 +322,7 @@ const ReviewEditor = () => {
               className={`px-3 py-1 rounded text-xs font-medium capitalize transition-colors
                 ${filter === f
                   ? 'bg-[#2563EB]/20 text-blue-400'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]'
                 }
               `}
             >
@@ -335,9 +335,9 @@ const ReviewEditor = () => {
       {/* Three Column Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel — Segment Navigator */}
-        <div className="w-[220px] bg-[#0F1B2D] border-r border-[#1E3A5F]/50 overflow-y-auto shrink-0">
+        <div className="w-[220px] bg-[var(--color-bg-base)] border-r border-[var(--color-border)]/50 overflow-y-auto shrink-0">
           <div className="p-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-2">Segments</p>
+            <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2 px-2">Segments</p>
             {segments.map((seg) => {
               const isActive = seg.id === selectedSegmentId;
               const dotColor = seg.status === 'approved' ? 'bg-green-500'
@@ -350,13 +350,13 @@ const ReviewEditor = () => {
                   onClick={() => scrollToSegment(seg.id)}
                   className={`w-full text-left px-3 py-2 rounded-lg mb-0.5 flex items-center gap-2 transition-all text-xs
                     ${isActive
-                      ? 'bg-[#2563EB]/10 border-l-2 border-l-[#2563EB] text-white'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-l-2 border-l-transparent'
+                      ? 'bg-[#2563EB]/10 border-l-2 border-l-[#2563EB] text-[var(--color-text-primary)]'
+                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]/50 border-l-2 border-l-transparent'
                     }
                   `}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-                  <span className="font-mono text-slate-500 w-5 shrink-0">#{seg.segment_index}</span>
+                  <span className="font-mono text-[var(--color-text-secondary)] w-5 shrink-0">#{seg.segment_index}</span>
                   <span className="truncate">{seg.source_text?.substring(0, 40)}</span>
                 </button>
               );
@@ -368,7 +368,7 @@ const ReviewEditor = () => {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {filteredSegments.length === 0 ? (
             <Card className="p-8 text-center">
-              <p className="text-slate-400">No segments match the current filter.</p>
+              <p className="text-[var(--color-text-muted)]">No segments match the current filter.</p>
             </Card>
           ) : (
             filteredSegments.map((seg) => (
@@ -391,11 +391,11 @@ const ReviewEditor = () => {
         </div>
 
         {/* Right Panel — Segment Details */}
-        <div className="w-[280px] bg-[#0F1B2D] border-l border-[#1E3A5F]/50 overflow-y-auto shrink-0">
+        <div className="w-[280px] bg-[var(--color-bg-base)] border-l border-[var(--color-border)]/50 overflow-y-auto shrink-0">
           {selectedSegment ? (
             <SegmentDetails segment={selectedSegment} />
           ) : (
-            <div className="p-6 text-center text-slate-500 text-sm">
+            <div className="p-6 text-center text-[var(--color-text-secondary)] text-sm">
               Select a segment to view details
             </div>
           )}
@@ -445,11 +445,11 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
   return (
     <Card className={`transition-all ${isSelected ? 'ring-1 ring-[#2563EB]/50' : ''}`}>
       {/* Header */}
-      <div className="px-5 py-3 border-b border-[#1E3A5F]/30 flex items-center justify-between">
+      <div className="px-5 py-3 border-b border-[var(--color-border)]/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-slate-500">#{segment.segment_index}</span>
+          <span className="text-xs font-mono text-[var(--color-text-secondary)]">#{segment.segment_index}</span>
           {segment.content_type && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{segment.content_type}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)]">{segment.content_type}</span>
           )}
           {segment.tm_match_type && (
             <Badge variant={segment.tm_match_type}>{segment.tm_match_type}</Badge>
@@ -469,29 +469,29 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
       </div>
 
       {/* Source and Translation Side by Side */}
-      <div className="grid grid-cols-2 divide-x divide-[#1E3A5F]/30">
+      <div className="grid grid-cols-2 divide-x divide-[var(--color-border)]/30">
         {/* Source */}
         <div className="p-5">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Source</p>
-          <p className="text-sm text-slate-200 leading-relaxed bg-[#0F1B2D] rounded-lg p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] mb-2">Source</p>
+          <p className="text-sm text-[var(--color-text-primary)] leading-relaxed bg-[var(--color-bg-base)] rounded-lg p-3">
             {segment.source_text}
           </p>
         </div>
         {/* Translation */}
         <div className="p-5">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Translation</p>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] mb-2">Translation</p>
           {editing ? (
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               rows={4}
-              className="w-full bg-[#0A1628] border border-[#2563EB] rounded-lg p-3 text-sm text-white resize-none
+              className="w-full bg-[var(--color-bg-surface)] border border-[var(--color-primary)] rounded-lg p-3 text-sm text-[var(--color-text-primary)] resize-none
                 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
               autoFocus
             />
           ) : (
             <p className={`text-sm leading-relaxed rounded-lg p-3 ${
-              displayText !== 'No translation yet' ? 'text-white bg-[#0A1628]' : 'text-slate-500 italic bg-[#0A1628]'
+              displayText !== 'No translation yet' ? 'text-[var(--color-text-primary)] bg-[var(--color-bg-surface)]' : 'text-[var(--color-text-secondary)] italic bg-[var(--color-bg-surface)]'
             }`}>
               {displayText}
             </p>
@@ -500,7 +500,7 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
       </div>
 
       {/* Action Row */}
-      <div className="px-5 py-3 border-t border-[#1E3A5F]/30 flex items-center justify-between">
+      <div className="px-5 py-3 border-t border-[var(--color-border)]/30 flex items-center justify-between">
         {editing ? (
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
@@ -556,19 +556,19 @@ const SegmentDetails = ({ segment }) => {
   return (
     <div className="p-5 space-y-5">
       <div>
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Details</p>
+        <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-3">Details</p>
 
         {/* Match Type */}
         {segment.tm_match_type && (
           <div className="mb-4">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Match Type</p>
+            <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Match Type</p>
             <Badge variant={segment.tm_match_type}>{segment.tm_match_type}</Badge>
           </div>
         )}
 
         {/* Confidence */}
         <div className="mb-4">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Confidence Score</p>
+          <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Confidence Score</p>
           <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg ${confBg}`}>
             <span className={`text-2xl font-display font-bold ${confColor}`}>
               {(confScore * 100).toFixed(0)}%
@@ -578,7 +578,7 @@ const SegmentDetails = ({ segment }) => {
 
         {/* Status */}
         <div className="mb-4">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Status</p>
+          <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Status</p>
           <Badge variant={segment.status === 'approved' ? 'approved' : segment.status === 'rejected' ? 'rejected' : 'pending'}>
             {segment.status}
           </Badge>
@@ -586,23 +586,23 @@ const SegmentDetails = ({ segment }) => {
 
         {/* Segment Index */}
         <div className="mb-4">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Segment Index</p>
-          <p className="text-sm text-white font-mono">#{segment.segment_index}</p>
+          <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Segment Index</p>
+          <p className="text-sm text-[var(--color-text-primary)] font-mono">#{segment.segment_index}</p>
         </div>
       </div>
 
       {/* TM Match Info */}
       {segment.tm_match_type && segment.tm_match_type !== 'new' && (
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">TM Match</p>
-          <div className="bg-[#0A1628] border border-[#1E3A5F]/30 rounded-lg p-3 space-y-2">
+          <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">TM Match</p>
+          <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)]/30 rounded-lg p-3 space-y-2">
             <div>
-              <p className="text-[10px] text-slate-500 uppercase mb-0.5">Source</p>
-              <p className="text-xs text-slate-300">{segment.source_text}</p>
+              <p className="text-[10px] text-[var(--color-text-secondary)] uppercase mb-0.5">Source</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">{segment.source_text}</p>
             </div>
             {segment.translated_text && (
               <div>
-                <p className="text-[10px] text-slate-500 uppercase mb-0.5">Target</p>
+                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase mb-0.5">Target</p>
                 <p className="text-xs text-green-300">{segment.translated_text}</p>
               </div>
             )}
@@ -613,8 +613,8 @@ const SegmentDetails = ({ segment }) => {
       {/* Content Type */}
       {segment.content_type && (
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Content Type</p>
-          <span className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">{segment.content_type}</span>
+          <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Content Type</p>
+          <span className="text-xs px-2 py-1 rounded bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]">{segment.content_type}</span>
         </div>
       )}
     </div>

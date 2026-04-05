@@ -4,21 +4,21 @@ const Select = ({ label, options = [], value, onChange, error, className = '', .
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-slate-300">{label}</label>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)]">{label}</label>
       )}
       <select
         value={value}
         onChange={onChange}
-        className={`w-full px-3 py-2 rounded-lg bg-[#0A1628] border text-white text-sm
+        className={`w-full px-3 py-2 rounded-lg bg-[var(--color-bg-surface)] border text-[var(--color-text-primary)] text-sm
           focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-colors
           appearance-none cursor-pointer
-          ${error ? 'border-red-500' : 'border-[#1E3A5F]'}
+          ${error ? 'border-red-500' : 'border-[var(--color-border)]'}
         `}
         {...props}
       >
-        <option value="" className="text-slate-500">Select...</option>
+        <option value="" className="text-[var(--color-text-secondary)]">Select...</option>
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value} className="bg-[#0A1628] text-white">
+          <option key={opt.value} value={opt.value} className="bg-[var(--color-bg-surface)] text-[var(--color-text-primary)]">
             {opt.label}
           </option>
         ))}

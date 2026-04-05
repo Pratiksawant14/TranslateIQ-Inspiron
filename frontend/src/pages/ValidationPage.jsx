@@ -137,15 +137,15 @@ const ValidationPage = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 bg-slate-700 rounded animate-pulse" />
-          <div className="h-7 bg-slate-700 rounded w-64 animate-pulse" />
+          <div className="h-4 w-4 bg-slate-200 rounded animate-pulse" />
+          <div className="h-7 bg-slate-200 rounded w-64 animate-pulse" />
         </div>
         <div className="grid grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="p-6">
               <div className="animate-pulse space-y-3">
-                <div className="h-3 bg-slate-700 rounded w-24" />
-                <div className="h-8 bg-slate-700 rounded w-12" />
+                <div className="h-3 bg-slate-200 rounded w-24" />
+                <div className="h-8 bg-slate-200 rounded w-12" />
               </div>
             </Card>
           ))}
@@ -153,7 +153,7 @@ const ValidationPage = () => {
         <Card className="p-6">
           <div className="animate-pulse space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-slate-800 rounded-lg" />
+              <div key={i} className="h-24 bg-[var(--color-bg-elevated)] rounded-lg" />
             ))}
           </div>
         </Card>
@@ -165,13 +165,13 @@ const ValidationPage = () => {
   if (isError) {
     return (
       <div className="space-y-6">
-        <Link to={`/projects/${projectId}`} className="inline-flex items-center text-slate-400 hover:text-white transition-colors text-sm">
+        <Link to={`/projects/${projectId}`} className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-sm">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Project
         </Link>
         <Card className="p-8 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Failed to load validation report</h3>
-          <p className="text-slate-400">The validation report could not be fetched. Try running validation again.</p>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Failed to load validation report</h3>
+          <p className="text-[var(--color-text-muted)]">The validation report could not be fetched. Try running validation again.</p>
         </Card>
       </div>
     );
@@ -181,15 +181,15 @@ const ValidationPage = () => {
   if (totalIssues === 0) {
     return (
       <div className="space-y-6">
-        <Link to={`/projects/${projectId}`} className="inline-flex items-center text-slate-400 hover:text-white transition-colors text-sm">
+        <Link to={`/projects/${projectId}`} className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-sm">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Project
         </Link>
         <Card className="p-16 flex flex-col items-center justify-center text-center">
           <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6">
             <CheckCircle2 className="w-10 h-10 text-green-400" />
           </div>
-          <h2 className="text-2xl font-display font-bold text-white mb-2">No issues found</h2>
-          <p className="text-slate-400 max-w-md mb-8">
+          <h2 className="text-2xl font-display font-bold text-[var(--color-text-primary)] mb-2">No issues found</h2>
+          <p className="text-[var(--color-text-muted)] max-w-md mb-8">
             Your source document is clean and ready for translation.
           </p>
           <Button variant="primary" size="lg" onClick={() => navigate(`/projects/${projectId}`)}>
@@ -206,18 +206,18 @@ const ValidationPage = () => {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link to={`/projects/${projectId}`} className="inline-flex items-center text-slate-400 hover:text-white transition-colors text-sm mb-3">
+          <Link to={`/projects/${projectId}`} className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-sm mb-3">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Project
           </Link>
-          <h1 className="font-display text-[28px] font-bold text-white">Source Quality Validation</h1>
-          <p className="text-slate-400 mt-1">Review and resolve issues before translation</p>
+          <h1 className="font-display text-[28px] font-bold text-[var(--color-text-primary)]">Source Quality Validation</h1>
+          <p className="text-[var(--color-text-muted)] mt-1">Review and resolve issues before translation</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Quality Score</p>
+          <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Quality Score</p>
           <p className={`text-4xl font-display font-bold ${getScoreColor()}`}>
             {totalIssues - resolvedCount === 0 ? '✓' : totalIssues - resolvedCount}
           </p>
-          <p className="text-xs text-slate-500 mt-1">unresolved issues</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">unresolved issues</p>
         </div>
       </div>
 
@@ -231,8 +231,8 @@ const ValidationPage = () => {
       {/* Progress */}
       <Card className="px-6 py-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-300">Issues Resolved</span>
-          <span className="text-sm text-slate-400">{resolvedCount} of {totalIssues}</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)]">Issues Resolved</span>
+          <span className="text-sm text-[var(--color-text-muted)]">{resolvedCount} of {totalIssues}</span>
         </div>
         <ProgressBar
           value={resolvedPercent}
@@ -241,7 +241,7 @@ const ValidationPage = () => {
       </Card>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1 border-b border-[#1E3A5F]/30">
+      <div className="flex items-center gap-1 border-b border-[var(--color-border)]/30">
         {FILTER_TABS.map((tab) => {
           const isActive = activeFilter === tab;
           const count = tab === 'all' ? totalIssues
@@ -255,11 +255,11 @@ const ValidationPage = () => {
               key={tab}
               onClick={() => setActiveFilter(tab)}
               className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors relative
-                ${isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'}
+                ${isActive ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}
               `}
             >
               {tab}
-              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500'}`}>
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-blue-500/20 text-blue-400' : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]'}`}>
                 {count}
               </span>
               {isActive && (
@@ -273,8 +273,8 @@ const ValidationPage = () => {
       {/* Issue List */}
       {filteredIssues.length === 0 ? (
         <Card className="p-8 text-center">
-          <CheckCircle2 className="w-8 h-8 text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-400">No issues in this category.</p>
+          <CheckCircle2 className="w-8 h-8 text-[var(--color-text-secondary)] mx-auto mb-3" />
+          <p className="text-[var(--color-text-muted)]">No issues in this category.</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -290,10 +290,10 @@ const ValidationPage = () => {
       )}
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-[240px] right-0 bg-[#0A1628]/95 backdrop-blur-sm border-t border-[#1E3A5F] px-6 py-3 z-10">
+      <div className="fixed bottom-0 left-[240px] right-0 bg-[var(--color-bg-surface)]/95 backdrop-blur-sm border-t border-[var(--color-border)] px-6 py-3 z-10">
         <div className="flex items-center justify-between max-w-full">
-          <span className="text-sm text-slate-400">
-            <span className="text-white font-medium">{resolvedCount}</span> of {totalIssues} issues resolved
+          <span className="text-sm text-[var(--color-text-muted)]">
+            <span className="text-[var(--color-text-primary)] font-medium">{resolvedCount}</span> of {totalIssues} issues resolved
           </span>
           <div className="flex items-center gap-3">
             <Button
@@ -334,7 +334,7 @@ const IssueCard = ({ issue, isResolving, onResolve }) => {
         {/* Top row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+            <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]">
               {issue.issue_type}
             </span>
             <Badge variant={issue.severity}>{issue.severity}</Badge>
@@ -347,13 +347,13 @@ const IssueCard = ({ issue, isResolving, onResolve }) => {
         </div>
 
         {/* Description */}
-        <p className="text-sm text-white">{issue.description}</p>
+        <p className="text-sm text-[var(--color-text-primary)]">{issue.description}</p>
 
         {/* Original Text */}
         {issue.original_text && (
-          <div className="bg-[#0A1628] border border-[#1E3A5F]/30 rounded-lg p-3">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">Problematic Text</p>
-            <p className="text-sm font-mono text-slate-300">{issue.original_text}</p>
+          <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)]/30 rounded-lg p-3">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] mb-1.5">Problematic Text</p>
+            <p className="text-sm font-mono text-[var(--color-text-secondary)]">{issue.original_text}</p>
           </div>
         )}
 

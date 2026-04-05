@@ -43,7 +43,7 @@ const TONE_OPTIONS = [
 
 const getToneStyle = (tone) => {
   const found = TONE_OPTIONS.find((t) => t.value === tone);
-  return found ? found.color : 'bg-slate-800 text-slate-300';
+  return found ? found.color : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]';
 };
 
 const StyleProfilesPage = () => {
@@ -118,8 +118,8 @@ const StyleProfilesPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-[28px] font-bold text-white">Style Profiles</h1>
-          <p className="text-slate-400 mt-1">Configure tone and style rules for each project</p>
+          <h1 className="font-display text-[28px] font-bold text-[var(--color-text-primary)]">Style Profiles</h1>
+          <p className="text-[var(--color-text-muted)] mt-1">Configure tone and style rules for each project</p>
         </div>
         <Button variant="primary" onClick={() => setShowModal(true)} disabled={!selectedProject}>
           <Plus className="w-4 h-4 mr-2" /> New Profile
@@ -139,16 +139,16 @@ const StyleProfilesPage = () => {
 
       {!selectedProject ? (
         <Card className="p-8 text-center">
-          <p className="text-slate-400">Select a project to manage its style profiles.</p>
+          <p className="text-[var(--color-text-muted)]">Select a project to manage its style profiles.</p>
         </Card>
       ) : isLoading ? (
         <div className="grid grid-cols-2 gap-5">
           {[...Array(2)].map((_, i) => (
             <Card key={i} className="p-6">
               <div className="animate-pulse space-y-4">
-                <div className="h-5 bg-slate-700 rounded w-3/4" />
-                <div className="h-8 bg-slate-700 rounded w-24" />
-                <div className="h-3 bg-slate-800 rounded w-full" />
+                <div className="h-5 bg-slate-200 rounded w-3/4" />
+                <div className="h-8 bg-slate-200 rounded w-24" />
+                <div className="h-3 bg-[var(--color-bg-elevated)] rounded w-full" />
               </div>
             </Card>
           ))}
@@ -156,15 +156,15 @@ const StyleProfilesPage = () => {
       ) : isError ? (
         <Card className="p-8 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Failed to load profiles</h3>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Failed to load profiles</h3>
         </Card>
       ) : (!profiles || profiles.length === 0) ? (
         <Card className="p-12 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
-            <Palette className="w-8 h-8 text-slate-400" />
+          <div className="w-16 h-16 rounded-2xl bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
+            <Palette className="w-8 h-8 text-[var(--color-text-muted)]" />
           </div>
-          <h3 className="text-xl font-display font-semibold text-white mb-2">No style profiles yet</h3>
-          <p className="text-slate-400 mb-6">Create a profile to enforce consistent tone in translations.</p>
+          <h3 className="text-xl font-display font-semibold text-[var(--color-text-primary)] mb-2">No style profiles yet</h3>
+          <p className="text-[var(--color-text-muted)] mb-6">Create a profile to enforce consistent tone in translations.</p>
           <Button variant="primary" onClick={() => setShowModal(true)}>
             <Plus className="w-4 h-4 mr-2" /> Create Profile
           </Button>
@@ -174,7 +174,7 @@ const StyleProfilesPage = () => {
           {profiles.map((profile) => (
             <Card key={profile.id} className="p-6 flex flex-col">
               <div className="flex items-start justify-between mb-3">
-                <h3 className="font-display font-bold text-white text-lg">{profile.name}</h3>
+                <h3 className="font-display font-bold text-[var(--color-text-primary)] text-lg">{profile.name}</h3>
                 <Badge variant="fuzzy">{profile.target_language}</Badge>
               </div>
 
@@ -188,19 +188,19 @@ const StyleProfilesPage = () => {
               {/* Custom rules */}
               <div className="flex-1 mb-4">
                 {profile.custom_rules ? (
-                  <p className="text-xs font-mono text-slate-400 bg-[#0A1628] rounded-lg p-3 line-clamp-3">
+                  <p className="text-xs font-mono text-[var(--color-text-muted)] bg-[var(--color-bg-surface)] rounded-lg p-3 line-clamp-3">
                     {profile.custom_rules.substring(0, 100)}
                     {profile.custom_rules.length > 100 ? '...' : ''}
                   </p>
                 ) : (
-                  <p className="text-sm italic text-slate-600">No custom rules</p>
+                  <p className="text-sm italic text-[var(--color-text-secondary)]">No custom rules</p>
                 )}
               </div>
 
-              <div className="flex justify-end pt-3 border-t border-[#1E3A5F]/30">
+              <div className="flex justify-end pt-3 border-t border-[var(--color-border)]/30">
                 <button
                   onClick={() => deleteMutation.mutate(profile.id)}
-                  className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded flex items-center gap-1 text-xs"
+                  className="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors p-1.5 rounded flex items-center gap-1 text-xs"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
@@ -232,7 +232,7 @@ const StyleProfilesPage = () => {
 
             {/* Tone pill selector */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-300">Tone</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)]">Tone</label>
               <div className="flex flex-wrap gap-2">
                 {TONE_OPTIONS.map((opt) => {
                   const isSelected = formData.tone === opt.value;
@@ -242,7 +242,7 @@ const StyleProfilesPage = () => {
                       type="button"
                       onClick={() => setFormData({ ...formData, tone: opt.value })}
                       className={`px-4 py-2 rounded-full text-sm font-medium border transition-all capitalize
-                        ${isSelected ? opt.color : 'bg-transparent border-[#1E3A5F] text-slate-500 hover:text-slate-300'}
+                        ${isSelected ? opt.color : 'bg-transparent border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)]'}
                       `}
                     >
                       {opt.label}
@@ -253,18 +253,18 @@ const StyleProfilesPage = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-300">Custom Rules</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)]">Custom Rules</label>
               <textarea
                 rows={3}
                 placeholder="e.g. Always use active voice. Avoid passive constructions. Use Oxford comma."
                 value={formData.custom_rules}
                 onChange={(e) => setFormData({ ...formData, custom_rules: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-[#0A1628] border border-[#1E3A5F] text-white text-sm
-                  placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent resize-none"
+                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-sm
+                  placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent resize-none"
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#1E3A5F]/30">
+            <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]/30">
               <Button variant="ghost" onClick={() => { setShowModal(false); setErrors({}); }}>Cancel</Button>
               <Button variant="primary" type="submit" loading={createMutation.isPending}>Create Profile</Button>
             </div>
