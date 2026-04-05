@@ -20,6 +20,7 @@ import {
   editSegment,
   rejectSegment,
   exportDocument,
+  approveAllSegments,
 } from '../lib/api/review';
 import useReviewStore from '../store/reviewStore';
 import Card from '../components/ui/Card';
@@ -34,6 +35,7 @@ const ReviewEditor = () => {
   const segmentRefs = useRef({});
   const [exporting, setExporting] = useState(false);
   const [bulkAccepting, setBulkAccepting] = useState(false);
+  const [isApprovingAll, setIsApprovingAll] = useState(false);
 
   const {
     segments,
@@ -178,6 +180,23 @@ const ReviewEditor = () => {
   };
 
   // Export handler
+  // Bulk approval handler
+  const handleApproveAll = async () => {
+    if (!segments.length || !targetLanguage) return;
+    
+    setIsApprovingAll(true);
+    try {
+      await approveAllSegments(projectId, documentId, targetLanguage);
+      queryClient.invalidateQueries(['review-session', projectId, documentId]);
+      toast('All segments have been approved', 'success');
+    } catch (error) {
+      console.error('Approve all failed:', error);
+      toast('Failed to approve all segments', 'error');
+    } finally {
+      setIsApprovingAll(false);
+    }
+  };
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -266,7 +285,6 @@ const ReviewEditor = () => {
         </div>
       </div>
 
-      {/* Bulk Actions Bar */}
       <div className="bg-[#0A1628] border-b border-[#1E3A5F]/50 px-6 py-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Button
@@ -277,6 +295,16 @@ const ReviewEditor = () => {
           >
             <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
             Accept All High Confidence
+          </Button>
+          
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleApproveAll}
+            loading={isApprovingAll}
+          >
+            <CheckSquare className="w-4 h-4 mr-1.5" />
+            Approve All Segments
           </Button>
         </div>
         <div className="flex items-center gap-2">

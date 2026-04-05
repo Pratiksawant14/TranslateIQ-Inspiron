@@ -70,3 +70,15 @@ async def reject_segment(
         return await review_service.reject_segment(db, str(segment_id))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+@router.post("/projects/{project_id}/documents/{document_id}/approve-all")
+async def approve_all_segments(
+    project_id: UUID,
+    document_id: UUID,
+    target_language: str,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        return await review_service.approve_all_segments(db, str(document_id), target_language)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

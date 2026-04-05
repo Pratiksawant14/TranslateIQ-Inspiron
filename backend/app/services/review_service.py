@@ -227,3 +227,75 @@ async def get_review_session(db: AsyncSession, document_id: str) -> Dict[str, An
         "target_language": target_language,
         "segments": segments
     }
+
+async def approve_all_segments(db: AsyncSession, document_id: str, target_language: str) -> Dict[str, Any]:
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # 1. Fetch document and project
+    doc_query = await db.execute(select(Document).where(Document.id == document_id))
+    document = doc_query.scalars().first()
+    if not document:
+        raise ValueError("Document not found")
+        
+    proj_query = await db.execute(select(Project).where(Project.id == document.project_id))
+    project = proj_query.scalars().first()
+
+    # 2. Fetch all segments that aren't already approved
+    seg_query = await db.execute(
+        select(Segment).where(Segment.document_id == document_id, Segment.status != "approved")
+    )
+    segments = seg_query.scalars().all()
+
+    if not segments:
+        return {"approved_count": 0, "message": "All segments already approved"}
+
+    norm_src = _normalize_lang(project.source_language)
+    norm_tgt = _normalize_lang(target_language)
+
+    # 3. Bulk Update
+    for segment in segments:
+        segment.status = "approved"
+        
+        # Strip tracking flags if approving bulk
+        if segment.translated_text and "[[[LOCAL_LLM]]]" in segment.translated_text:
+            segment.translated_text = segment.translated_text.replace(" [[[LOCAL_LLM]]]", "")
+
+        # Audit Log
+        db.add(AuditLog(
+            segment_id=segment.id,
+            action="accepted",
+            original_text=segment.translated_text
+        ))
+
+        # Telemetry
+        db.add(TelemetrySignal(
+            segment_id=segment.id,
+            source_text=segment.source_text,
+            mt_output=segment.translated_text or "",
+            signal_label="desirable",
+            is_trained=False
+        ))
+
+        # TM Update
+        if segment.translated_text:
+            try:
+                await store_tm_entry(
+                    db=db,
+                    project_id=project.id,
+                    source_language=norm_src,
+                    target_language=norm_tgt,
+                    source_text=segment.source_text,
+                    target_text=segment.translated_text
+                )
+            except Exception as e:
+                logger.warning(f"Bulk TM storage failed for segment {segment.id}: {e}")
+
+    await db.commit()
+    logger.info(f"Bulk approved {len(segments)} segments for document {document_id}")
+
+    return {
+        "document_id": document_id,
+        "approved_count": len(segments),
+        "status": "success"
+    }

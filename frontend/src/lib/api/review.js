@@ -38,3 +38,9 @@ export const exportDocument = async (projectId, documentId) => {
   );
   return response;
 };
+export const approveAllSegments = async (projectId, documentId, targetLanguage) => {
+  const { data } = await api.post(
+    `/projects/${projectId}/documents/${documentId}/approve-all?target_language=${encodeURIComponent(targetLanguage)}`
+  );
+  return data;
+};
