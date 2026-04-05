@@ -87,6 +87,15 @@ const ReviewEditor = () => {
 
   // Accept handler
   const handleAccept = async (segmentId) => {
+    const seg = segments.find(s => s.id === segmentId);
+    if (!seg) return;
+    
+    // If it's a local model translation, we must strip the tracking flag before finalizing
+    if (seg.translated_text?.includes('[[[LOCAL_LLM]]]')) {
+      const cleanText = seg.translated_text.replace(' [[[LOCAL_LLM]]]', '');
+      return handleEdit(segmentId, cleanText);
+    }
+    
     updateSegment(segmentId, { status: 'approved' });
     try {
       await acceptSegment(segmentId, targetLanguage);
@@ -141,12 +150,17 @@ const ReviewEditor = () => {
     if (highConf.length === 0) return toast('No high-confidence pending segments', 'info');
 
     setBulkAccepting(true);
-    highConf.forEach((s) => updateSegment(s.id, { status: 'approved' }));
 
     let failed = 0;
     for (const seg of highConf) {
       try {
-        await acceptSegment(seg.id, targetLanguage);
+        if (seg.translated_text?.includes('[[[LOCAL_LLM]]]')) {
+          const cleanText = seg.translated_text.replace(' [[[LOCAL_LLM]]]', '');
+          await handleEdit(seg.id, cleanText);
+        } else {
+          updateSegment(seg.id, { status: 'approved' });
+          await acceptSegment(seg.id, targetLanguage);
+        }
       } catch (error) {
         console.error('Bulk accept failed for segment:', seg.id, error);
         failed++;
@@ -362,11 +376,6 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
   const [editText, setEditText] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
 
-  const startEdit = () => {
-    setEditText(segment.translated_text || '');
-    setEditing(true);
-  };
-
   const saveEdit = async () => {
     setActionLoading('edit');
     await onEdit(editText);
@@ -390,6 +399,14 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
     ? 'text-green-400' : (segment.confidence_score || 0) >= 0.7
     ? 'text-amber-400' : 'text-red-400';
 
+  const isLocal = segment.translated_text?.includes('[[[LOCAL_LLM]]]');
+  const displayText = segment.translated_text?.replace(' [[[LOCAL_LLM]]]', '') || 'No translation yet';
+
+  const startEdit = () => {
+    setEditText(displayText === 'No translation yet' ? '' : displayText);
+    setEditing(true);
+  };
+
   return (
     <Card className={`transition-all ${isSelected ? 'ring-1 ring-[#2563EB]/50' : ''}`}>
       {/* Header */}
@@ -401,6 +418,12 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
           )}
           {segment.tm_match_type && (
             <Badge variant={segment.tm_match_type}>{segment.tm_match_type}</Badge>
+          )}
+          {isLocal && (
+            <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+              <Sparkles className="w-3 h-3" />
+              Llama-3-8B Selected
+            </div>
           )}
         </div>
         {segment.confidence_score != null && (
@@ -433,9 +456,9 @@ const SegmentCard = ({ segment, isSelected, onAccept, onReject, onEdit, onUndo }
             />
           ) : (
             <p className={`text-sm leading-relaxed rounded-lg p-3 ${
-              segment.translated_text ? 'text-white bg-[#0A1628]' : 'text-slate-500 italic bg-[#0A1628]'
+              displayText !== 'No translation yet' ? 'text-white bg-[#0A1628]' : 'text-slate-500 italic bg-[#0A1628]'
             }`}>
-              {segment.translated_text || 'No translation yet'}
+              {displayText}
             </p>
           )}
         </div>

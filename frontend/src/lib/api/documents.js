@@ -46,3 +46,8 @@ export const resolveIssue = async (projectId, documentId, issueId) => {
   const { data } = await api.post(`/projects/${projectId}/documents/${documentId}/issues/${issueId}/resolve`);
   return data;
 };
+
+export const deleteDocument = async (projectId, documentId) => {
+  const { data } = await api.delete(`/projects/${projectId}/documents/${documentId}`);
+  return data;
+};

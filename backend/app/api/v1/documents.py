@@ -112,3 +112,30 @@ async def translate_document_endpoint(
         target_language=request.target_language,
         style_profile_id=str(request.style_profile_id) if request.style_profile_id else None
     )
+
+@router.delete("/{project_id}/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document_endpoint(
+    project_id: UUID,
+    document_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import delete, select
+    from app.models.document import Document
+    from app.models.segment import Segment
+    from app.models.audit_log import AuditLog
+    from app.models.telemetry import TelemetrySignal
+    
+    await project_service.get_project_by_id(db, project_id)
+    doc = await db.scalar(select(Document).where(Document.id == document_id))
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    segment_query = select(Segment.id).where(Segment.document_id == str(document_id))
+    
+    await db.execute(delete(TelemetrySignal).where(TelemetrySignal.segment_id.in_(segment_query)))
+    await db.execute(delete(AuditLog).where(AuditLog.segment_id.in_(segment_query)))
+    await db.execute(delete(Segment).where(Segment.document_id == str(document_id)))
+    await db.execute(delete(Document).where(Document.id == document_id))
+    await db.commit()
+    
+    return None

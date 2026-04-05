@@ -9,6 +9,16 @@ from app.api.v1.router import api_router
 
 logging.basicConfig(level=logging.INFO)
 
+app = FastAPI(
+    title="TranslateIQ API",
+    description="AI-Powered Enterprise Translation Studio",
+    version="1.0.0"
+)
+
+@app.get("/ping")
+async def ping():
+    return {"status": "pong"}
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure qdrant collection exists
@@ -16,12 +26,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown logic if any
 
-app = FastAPI(
-    title="TranslateIQ API",
-    description="AI-Powered Enterprise Translation Studio",
-    version="1.0.0",
-    lifespan=lifespan
-)
+app.router.lifespan_context = lifespan
 
 app.add_middleware(
     CORSMiddleware,

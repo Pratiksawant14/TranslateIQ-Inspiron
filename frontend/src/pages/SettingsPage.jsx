@@ -10,7 +10,8 @@ import {
   ExternalLink,
   Save,
   CheckCircle2,
-  Package
+  Package,
+  Database
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';

@@ -18,6 +18,7 @@ import {
   ArrowRight,
   CheckSquare,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { getProject } from '../lib/api/projects';
 import {
@@ -27,6 +28,7 @@ import {
   validateDocument,
   classifyDocument,
   translateDocument,
+  deleteDocument,
 } from '../lib/api/documents';
 import { scoreDocument } from '../lib/api/review';
 import Card from '../components/ui/Card';
@@ -238,6 +240,20 @@ const ProjectDetail = () => {
     );
   }
 
+  const handleDelete = async (doc) => {
+    if (!window.confirm(`Are you sure you want to delete ${doc.filename}? This will delete all its segments.`)) return;
+    try {
+      setActionLoading((p) => ({ ...p, [doc.id]: 'deleting' }));
+      await deleteDocument(projectId, doc.id);
+      toast('Document deleted', 'success');
+      queryClient.invalidateQueries(['documents', projectId]);
+    } catch (err) {
+      toast(err.response?.data?.detail || 'Failed to delete', 'error');
+    } finally {
+      setActionLoading((p) => { const n = { ...p }; delete n[doc.id]; return n; });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -292,6 +308,7 @@ const ProjectDetail = () => {
                 onTranslate={() => handleTranslate(doc)}
                 onScore={() => handleScore(doc)}
                 onNavigateReview={() => navigate(`/projects/${projectId}/documents/${doc.id}/review`)}
+                onDelete={() => handleDelete(doc)}
                 formatDate={formatDate}
               />
             ))}
@@ -382,7 +399,7 @@ const ProjectDetail = () => {
 };
 
 // Document Card sub-component
-const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, onScore, onNavigateReview, formatDate }) => {
+const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, onScore, onNavigateReview, onDelete, formatDate }) => {
   const navigate = useNavigate();
 
   const getFileIcon = () => {
@@ -392,6 +409,7 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
   };
 
   const getActionLabel = () => {
+    if (actionLoading === 'deleting') return 'Deleting...';
     if (actionLoading === 'validating') return 'Validating...';
     if (actionLoading === 'classifying') return 'Classifying segments...';
     if (actionLoading === 'translating') return 'Translating new segments...';
@@ -531,6 +549,13 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
         </div>
         <div className="flex items-center gap-3">
           {renderActions()}
+          <button 
+            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors ml-2"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            title="Delete Document"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </Card>

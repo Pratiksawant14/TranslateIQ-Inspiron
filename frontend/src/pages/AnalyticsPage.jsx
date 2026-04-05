@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -18,8 +18,10 @@ import Stat from '../components/ui/Stat';
 import Badge from '../components/ui/Badge';
 import Select from '../components/ui/Select';
 import ProgressBar from '../components/ui/ProgressBar';
+import { toast } from '../hooks/useToast';
 
 const AnalyticsPage = () => {
+  const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState('');
 
   // Fetch projects for selector
@@ -41,6 +43,19 @@ const AnalyticsPage = () => {
     queryFn: () => getProjectAnalytics(selectedProjectId),
     enabled: !!selectedProjectId,
   });
+
+  const { data: ftData } = useQuery({
+    queryKey: ['finetuneStatus', selectedProjectId],
+    queryFn: async () => {
+      const res = await fetch(`http://localhost:8001/api/v1/projects/${selectedProjectId}/fine-tune/status`);
+      if (!res.ok) return { status: 'none' };
+      return res.json();
+    },
+    enabled: !!selectedProjectId,
+    refetchInterval: (query) => query.state.data?.status === 'training' ? 2000 : false
+  });
+
+  const ftStatus = ftData?.status || 'none';
 
   if (projectsLoading) {
     return (
@@ -212,9 +227,41 @@ const AnalyticsPage = () => {
                     <h4 className="text-sm font-semibold text-white">Fine-tuning Readiness</h4>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                       {analytics.telemetry_count >= 500 
-                        ? "You have collected sufficient data to initiate a custom fine-tuning run for this project's tone profile." 
+                        ? (ftStatus === 'completed' ? "Custom model deployed and active for Adaptive MT." : ftStatus === 'training' ? "Model is currently training..." : "You have collected sufficient data to initiate a custom fine-tuning run for this project's tone profile.")
                         : `Collect ${500 - analytics.telemetry_count} more human-reviewed segments to reach the 500 signal threshold for optimal fine-tuning quality.`}
                     </p>
+                    
+                    {analytics.telemetry_count >= 500 && ftStatus === 'none' && (
+                      <button 
+                        className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`http://localhost:8001/api/v1/projects/${selectedProjectId}/fine-tune`, { method: 'POST' });
+                            if (res.ok) {
+                              toast('Fine-tuning job submitted! Model is training.', 'info');
+                              queryClient.invalidateQueries(['finetuneStatus', selectedProjectId]);
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
+                      >
+                        <BrainCircuit className="w-4 h-4" />
+                        Initiate Llama-3-8B Fine-Tuning
+                      </button>
+                    )}
+                    
+                    {ftStatus === 'training' && (
+                      <div className="mt-4 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs px-4 py-2 rounded-lg flex items-center gap-2 w-fit">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Training Llama-3-8B in background...
+                      </div>
+                    )}
+                    
+                    {ftStatus === 'completed' && (
+                      <div className="mt-4 bg-green-500/10 border border-green-500/20 text-green-400 text-xs px-4 py-2 rounded-lg flex items-center gap-2 w-fit">
+                        <CheckCircle2 className="w-4 h-4" /> Llama-3-8B Adaptive MT Active
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
