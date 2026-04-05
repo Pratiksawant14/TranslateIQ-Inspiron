@@ -1,22 +1,36 @@
 import React from 'react';
 
-const Badge = ({ variant = 'new', children, className = '' }) => {
-  const variantStyles = {
-    exact: 'bg-green-600 text-white',
-    fuzzy: 'bg-amber-400 text-slate-900',
-    new: 'bg-red-500 text-white',
-    approved: 'bg-green-600 text-white',
-    pending: 'bg-amber-400 text-slate-900',
-    rejected: 'bg-red-500 text-white',
-    low: 'bg-slate-600 text-white',
-    medium: 'bg-amber-500 text-white',
-    high: 'bg-red-600 text-white',
+const Badge = ({ variant = 'primary', children, className = '' }) => {
+  const getStyle = () => {
+    const styles = {
+      primary:  { backgroundColor: '#EEF2FF', color: '#4F46E5', borderColor: '#C7D2FE' },
+      success:  { backgroundColor: '#DCFCE7', color: '#15803D', borderColor: '#BBF7D0' },
+      error:    { backgroundColor: '#FEE2E2', color: '#DC2626', borderColor: '#FECACA' },
+      warning:  { backgroundColor: '#FEF3C7', color: '#D97706', borderColor: '#FCD34D' },
+      info:     { backgroundColor: '#DBEAFE', color: '#2563EB', borderColor: '#93C5FD' },
+      exact:    { backgroundColor: '#DCFCE7', color: '#15803D', borderColor: '#BBF7D0' },
+      fuzzy:    { backgroundColor: '#FEF3C7', color: '#D97706', borderColor: '#FCD34D' },
+      new:      { backgroundColor: '#FEE2E2', color: '#DC2626', borderColor: '#FECACA' },
+      approved: { backgroundColor: '#DCFCE7', color: '#15803D', borderColor: '#BBF7D0' },
+      pending:  { backgroundColor: '#FEF3C7', color: '#D97706', borderColor: '#FCD34D' },
+      rejected: { backgroundColor: '#FEE2E2', color: '#DC2626', borderColor: '#FECACA' },
+    };
+    return styles[variant] || styles.primary;
   };
 
-  const style = variantStyles[variant] || variantStyles.new;
+  const style = getStyle();
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wider ${style} ${className}`}>
+    <span 
+      style={{ 
+        backgroundColor: style.backgroundColor, 
+        color: style.color,
+        borderColor: style.borderColor,
+        border: `1px solid ${style.borderColor}`,
+        transition: 'transform 150ms ease, box-shadow 150ms ease',
+      }}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold cursor-default hover:scale-105 ${className}`}
+    >
       {children}
     </span>
   );

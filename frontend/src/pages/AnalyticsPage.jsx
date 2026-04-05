@@ -86,8 +86,8 @@ const AnalyticsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-[28px] font-bold text-white">Analytics</h1>
-          <p className="text-slate-400 mt-1">Translation performance and quality metrics</p>
+          <h1 className="font-display text-[28px] font-bold text-[var(--color-text-primary)]">Analytics</h1>
+          <p className="text-[var(--color-text-muted)] mt-1">Translation performance and quality metrics</p>
         </div>
         <div className="w-64">
           <Select 
@@ -100,28 +100,28 @@ const AnalyticsPage = () => {
       </div>
 
       {!selectedProjectId ? (
-        <Card className="p-16 flex flex-col items-center justify-center text-center bg-[#0F1B2D]/50 border-dashed border-2 border-[#1E3A5F]">
-          <BarChart3 className="w-16 h-16 text-slate-600 mb-4" />
-          <h3 className="text-xl font-display font-semibold text-slate-300">Select a project to view analytics</h3>
-          <p className="text-slate-500 mt-2 max-w-sm">
+        <Card className="p-16 flex flex-col items-center justify-center text-center bg-[var(--color-bg-base)]/50 border-dashed border-2 border-[var(--color-border)]">
+          <BarChart3 className="w-16 h-16 text-[var(--color-text-secondary)] mb-4" />
+          <h3 className="text-xl font-display font-semibold text-[var(--color-text-secondary)]">Select a project to view analytics</h3>
+          <p className="text-[var(--color-text-secondary)] mt-2 max-w-sm">
             Choose a project from the dropdown above to analyze its translation memory leverage, quality scores, and learning progress.
           </p>
         </Card>
       ) : analyticsLoading ? (
         <div className="space-y-8">
           <div className="grid grid-cols-4 gap-6 animate-pulse">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-slate-800/50 rounded-xl" />)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-[var(--color-bg-elevated)]/50 rounded-xl" />)}
           </div>
           <div className="grid grid-cols-2 gap-6 animate-pulse">
-            <div className="h-64 bg-slate-800/50 rounded-xl" />
-            <div className="h-64 bg-slate-800/50 rounded-xl" />
+            <div className="h-64 bg-[var(--color-bg-elevated)]/50 rounded-xl" />
+            <div className="h-64 bg-[var(--color-bg-elevated)]/50 rounded-xl" />
           </div>
         </div>
       ) : isError ? (
         <Card className="p-12 text-center border-red-500/20 bg-red-500/5">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white">Failed to load analytics</h3>
-          <p className="text-slate-400 mt-2">There was an error fetching the metrics for this project.</p>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Failed to load analytics</h3>
+          <p className="text-[var(--color-text-muted)] mt-2">There was an error fetching the metrics for this project.</p>
         </Card>
       ) : (
         <>
@@ -158,15 +158,15 @@ const AnalyticsPage = () => {
             {/* Segment Breakdown */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display font-semibold text-white">Segment Breakdown</h3>
-                <Info className="w-4 h-4 text-slate-500" />
+                <h3 className="font-display font-semibold text-[var(--color-text-primary)]">Segment Breakdown</h3>
+                <Info className="w-4 h-4 text-[var(--color-text-secondary)]" />
               </div>
               
               <div className="space-y-6">
                 {/* Exact Matches */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-end">
-                    <span className="text-sm font-medium text-slate-400 w-32">Exact Matches</span>
+                    <span className="text-sm font-medium text-[var(--color-text-muted)] w-32">Exact Matches</span>
                     <span className="text-xs font-mono text-green-400">{analytics.exact_matches} ({calculatePercent(analytics.exact_matches)}%)</span>
                   </div>
                   <ProgressBar value={parseFloat(calculatePercent(analytics.exact_matches))} color="green" />
@@ -175,7 +175,7 @@ const AnalyticsPage = () => {
                 {/* Fuzzy Matches */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-end">
-                    <span className="text-sm font-medium text-slate-400 w-32">Fuzzy Matches</span>
+                    <span className="text-sm font-medium text-[var(--color-text-muted)] w-32">Fuzzy Matches</span>
                     <span className="text-xs font-mono text-amber-400">{analytics.fuzzy_matches} ({calculatePercent(analytics.fuzzy_matches)}%)</span>
                   </div>
                   <ProgressBar value={parseFloat(calculatePercent(analytics.fuzzy_matches))} color="amber" />
@@ -184,13 +184,13 @@ const AnalyticsPage = () => {
                 {/* New Segments */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-end">
-                    <span className="text-sm font-medium text-slate-400 w-32">New Segments</span>
+                    <span className="text-sm font-medium text-[var(--color-text-muted)] w-32">New Segments</span>
                     <span className="text-xs font-mono text-red-400">{analytics.new_segments} ({calculatePercent(analytics.new_segments)}%)</span>
                   </div>
                   <ProgressBar value={parseFloat(calculatePercent(analytics.new_segments))} color="red" />
                 </div>
               </div>
-              <p className="mt-8 text-xs text-slate-500 leading-relaxed italic">
+              <p className="mt-8 text-xs text-[var(--color-text-secondary)] leading-relaxed italic">
                 TM Leverage represents the percentage of content recycled from your Translation Memory, significantly reducing effort and cost.
               </p>
             </Card>
@@ -198,34 +198,34 @@ const AnalyticsPage = () => {
             {/* Learning Pipeline */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display font-semibold text-white">Continuous Learning Pipeline</h3>
+                <h3 className="font-display font-semibold text-[var(--color-text-primary)]">Continuous Learning Pipeline</h3>
                 <BrainCircuit className="w-5 h-5 text-blue-400" />
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                <div className="bg-[#0F1B2D] p-5 rounded-xl border border-[#1E3A5F]/30 hover:border-[#2563EB]/40 transition-colors">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Training Signals Collected</p>
+                <div className="bg-[var(--color-bg-base)] p-5 rounded-xl border border-[var(--color-border)]/30 hover:border-[var(--color-primary)]/40 transition-colors">
+                  <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Training Signals Collected</p>
                   <div className="flex items-end justify-between">
-                    <span className="text-3xl font-display font-bold text-white leading-none">
+                    <span className="text-3xl font-display font-bold text-[var(--color-text-primary)] leading-none">
                       {analytics.telemetry_count.toLocaleString()}
                     </span>
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-500 uppercase mb-1">Status</p>
+                      <p className="text-[10px] text-[var(--color-text-secondary)] uppercase mb-1">Status</p>
                       {getReadinessBadge(analytics.telemetry_count)}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+                  <p className="text-xs text-[var(--color-text-muted)] mt-4 leading-relaxed">
                     Signals consist of human-reviewed high-quality translations used to fine-tune your project's custom LLM.
                   </p>
                 </div>
 
-                <div className="bg-[#0F1B2D] p-5 rounded-xl border border-[#1E3A5F]/30 flex items-start gap-4">
+                <div className="bg-[var(--color-bg-base)] p-5 rounded-xl border border-[var(--color-border)]/30 flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-white">Fine-tuning Readiness</h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Fine-tuning Readiness</h4>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">
                       {analytics.telemetry_count >= 500 
                         ? (ftStatus === 'completed' ? "Custom model deployed and active for Adaptive MT." : ftStatus === 'training' ? "Model is currently training..." : "You have collected sufficient data to initiate a custom fine-tuning run for this project's tone profile.")
                         : `Collect ${500 - analytics.telemetry_count} more human-reviewed segments to reach the 500 signal threshold for optimal fine-tuning quality.`}
@@ -233,7 +233,7 @@ const AnalyticsPage = () => {
                     
                     {analytics.telemetry_count >= 500 && ftStatus === 'none' && (
                       <button 
-                        className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                        className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-[var(--color-text-primary)] text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
                         onClick={async () => {
                           try {
                             const res = await fetch(`http://localhost:8001/api/v1/projects/${selectedProjectId}/fine-tune`, { method: 'POST' });

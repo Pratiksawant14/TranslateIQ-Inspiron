@@ -210,13 +210,13 @@ const ProjectDetail = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="h-5 w-5 bg-slate-700 rounded animate-pulse" />
-          <div className="h-7 bg-slate-700 rounded w-48 animate-pulse" />
+          <div className="h-5 w-5 bg-slate-200 rounded animate-pulse" />
+          <div className="h-7 bg-slate-200 rounded w-48 animate-pulse" />
         </div>
         <Card className="p-6">
           <div className="animate-pulse space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-slate-800 rounded-lg" />
+              <div key={i} className="h-20 bg-[var(--color-bg-elevated)] rounded-lg" />
             ))}
           </div>
         </Card>
@@ -228,13 +228,13 @@ const ProjectDetail = () => {
   if (projectError || docsError) {
     return (
       <div className="space-y-6">
-        <Link to="/projects" className="inline-flex items-center text-slate-400 hover:text-white transition-colors">
+        <Link to="/projects" className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Projects
         </Link>
         <Card className="p-8 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Failed to load project</h3>
-          <p className="text-slate-400">Could not connect to the server.</p>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Failed to load project</h3>
+          <p className="text-[var(--color-text-muted)]">Could not connect to the server.</p>
         </Card>
       </div>
     );
@@ -259,14 +259,14 @@ const ProjectDetail = () => {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link to="/projects" className="inline-flex items-center text-slate-400 hover:text-white transition-colors text-sm mb-3">
+          <Link to="/projects" className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors text-sm mb-3">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects
           </Link>
-          <h1 className="font-display text-[28px] font-bold text-white">{project.name}</h1>
+          <h1 className="font-display text-[28px] font-bold text-[var(--color-text-primary)]">{project.name}</h1>
           <div className="flex items-center gap-3 mt-2">
             <Badge variant="fuzzy">{project.source_language}</Badge>
             {project.description && (
-              <span className="text-slate-400 text-sm">{project.description}</span>
+              <span className="text-[var(--color-text-muted)] text-sm">{project.description}</span>
             )}
           </div>
         </div>
@@ -279,19 +279,19 @@ const ProjectDetail = () => {
       {/* Documents Section */}
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display font-semibold text-white text-lg">Documents</h2>
-          <span className="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">
+          <h2 className="font-display font-semibold text-[var(--color-text-primary)] text-lg">Documents</h2>
+          <span className="text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)] px-2 py-0.5 rounded-full">
             {documents?.length || 0}
           </span>
         </div>
 
         {(!documents || documents.length === 0) ? (
           <Card className="p-12 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
-              <FileText className="w-8 h-8 text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
+              <FileText className="w-8 h-8 text-[var(--color-text-muted)]" />
             </div>
-            <h3 className="text-xl font-display font-semibold text-white mb-2">No documents yet</h3>
-            <p className="text-slate-400 mb-6">Upload a PDF or DOCX to begin the translation pipeline.</p>
+            <h3 className="text-xl font-display font-semibold text-[var(--color-text-primary)] mb-2">No documents yet</h3>
+            <p className="text-[var(--color-text-muted)] mb-6">Upload a PDF or DOCX to begin the translation pipeline.</p>
             <Button variant="primary" onClick={() => setShowUploadModal(true)}>
               <Upload className="w-4 h-4 mr-2" /> Upload Document
             </Button>
@@ -330,13 +330,13 @@ const ProjectDetail = () => {
                 className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all
                   ${isDragging
                     ? 'border-blue-500 bg-blue-500/10'
-                    : 'border-[#1E3A5F] hover:border-[#2D4A77] hover:bg-[#0A1628]/50'
+                    : 'border-[var(--color-border)] hover:border-[#2D4A77] hover:bg-[var(--color-bg-surface)]/50'
                   }
                 `}
               >
-                <CloudUpload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-400' : 'text-slate-400'}`} />
-                <p className="text-sm font-medium text-white">Drop PDF or DOCX here</p>
-                <p className="text-xs text-slate-500 mt-1">or click to browse</p>
+                <CloudUpload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-400' : 'text-[var(--color-text-muted)]'}`} />
+                <p className="text-sm font-medium text-[var(--color-text-primary)]">Drop PDF or DOCX here</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">or click to browse</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -346,17 +346,17 @@ const ProjectDetail = () => {
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-[#0A1628] border border-[#1E3A5F] rounded-lg p-3">
+              <div className="flex items-center justify-between bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg p-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
                     <File className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{selectedFile.name}</p>
-                    <p className="text-xs text-slate-500">{formatFileSize(selectedFile.size)}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{selectedFile.name}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{formatFileSize(selectedFile.size)}</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedFile(null)} className="text-slate-400 hover:text-white p-1">
+                <button onClick={() => setSelectedFile(null)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-1">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -378,7 +378,7 @@ const ProjectDetail = () => {
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-2 border-t border-[#1E3A5F]/30">
+            <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]/30">
               <Button variant="ghost" onClick={() => { setShowUploadModal(false); resetUploadForm(); }} disabled={!!uploadStep}>
                 Cancel
               </Button>
@@ -460,7 +460,7 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-slate-400 hover:text-white"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
                 onClick={(e) => { e.stopPropagation(); onTranslate(); }}
               >
                 <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Redo
@@ -532,25 +532,25 @@ const DocumentCard = ({ doc, projectId, actionLoading, onValidate, onTranslate, 
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 group-hover/card:bg-slate-700 transition-colors">
+          <div className="w-10 h-10 rounded-lg bg-[var(--color-bg-elevated)] flex items-center justify-center shrink-0 group-hover/card:bg-indigo-50 transition-colors">
             {getFileIcon()}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-medium text-white group-hover/card:text-blue-400 transition-colors">{doc.filename}</p>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover/card:text-blue-400 opacity-0 group-hover/card:opacity-100 transition-all -translate-x-2 group-hover/card:translate-x-0" />
+              <p className="font-medium text-[var(--color-text-primary)] group-hover/card:text-blue-400 transition-colors">{doc.filename}</p>
+              <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-secondary)] group-hover/card:text-blue-400 opacity-0 group-hover/card:opacity-100 transition-all -translate-x-2 group-hover/card:translate-x-0" />
             </div>
             <div className="flex items-center gap-3 mt-1">
               <StatusBadge status={doc.status} />
-              <span className="text-xs text-slate-500">{doc.total_segments || 0} segments</span>
-              <span className="text-xs text-slate-500">{formatDate(doc.created_at)}</span>
+              <span className="text-xs text-[var(--color-text-secondary)]">{doc.total_segments || 0} segments</span>
+              <span className="text-xs text-[var(--color-text-secondary)]">{formatDate(doc.created_at)}</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {renderActions()}
           <button 
-            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors ml-2"
+            className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-red-400/10 rounded transition-colors ml-2"
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             title="Delete Document"
           >

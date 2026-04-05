@@ -11,14 +11,39 @@ const Button = ({
   className = '',
   type = 'button'
 }) => {
-  const baseStyles = "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0A1628]";
+  const baseStyles = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500/40";
   
-  const variants = {
-    primary: "bg-[#2563EB] hover:bg-[#1D4ED8] text-white focus:ring-[#2563EB]",
-    secondary: "bg-transparent border border-[#1E3A5F] hover:bg-[#1E3A5F]/50 text-slate-200 focus:ring-[#1E3A5F]",
-    danger: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-600",
-    ghost: "bg-transparent hover:bg-slate-800 text-slate-300 focus:ring-slate-800",
-    success: "bg-green-600 hover:bg-green-700 text-white focus:ring-green-600"
+  const getVariantStyle = () => {
+    const styles = {
+      primary: {
+        backgroundColor: 'var(--color-primary)',
+        color: '#FFFFFF',
+        borderColor: 'transparent',
+      },
+      secondary: {
+        backgroundColor: 'var(--color-bg-surface)',
+        color: 'var(--color-text-primary)',
+        borderColor: 'var(--color-border)',
+        border: '1px solid var(--color-border)',
+      },
+      danger: {
+        backgroundColor: 'var(--color-error)',
+        color: '#FFFFFF',
+        borderColor: 'transparent',
+      },
+      ghost: {
+        backgroundColor: 'transparent',
+        color: 'var(--color-primary)',
+        borderColor: 'transparent',
+        border: '1px solid transparent',
+      },
+      success: {
+        backgroundColor: 'var(--color-success)',
+        color: '#FFFFFF',
+        borderColor: 'transparent',
+      },
+    };
+    return styles[variant] || styles.primary;
   };
 
   const sizes = {
@@ -32,11 +57,11 @@ const Button = ({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      style={getVariantStyle()}
       className={`
         ${baseStyles}
-        ${variants[variant]}
         ${sizes[size]}
-        ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : ''}
+        ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90 hover:shadow-md'}
         ${className}
       `}
     >

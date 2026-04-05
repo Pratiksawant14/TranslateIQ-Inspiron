@@ -8,31 +8,31 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          primary: '#0F1B2D',
-          secondary: '#1E3A5F',
-          accent: '#3B82F6',
-          'accent-light': '#60A5FA',
-        },
-        surface: '#0A1628',
-        card: '#162032',
-        border: '#1E3A5F',
+        // Clean Modern Palette
+        primary: '#2563EB',           // Blue
+        'primary-hover': '#1D4ED8',   // Blue Dark
+        background: '#F9FAFB',        // Very light gray
+        surface: '#FFFFFF',           // White
+        border: '#E5E7EB',            // Light gray
+        success: '#10B981',           // Green
+        error: '#EF4444',             // Red
+        warning: '#F59E0B',           // Amber
+        info: '#3B82F6',              // Blue
         text: {
-          primary: '#F8FAFC',
-          secondary: '#94A3B8',
-          muted: '#475569',
+          primary: '#111827',         // Dark gray
+          secondary: '#6B7280',       // Medium gray
+          muted: '#9CA3AF',           // Light gray
         },
-        status: {
-          success: '#10B981',
-          warning: '#F59E0B',
+        brand: {
+          primary: '#2563EB',
+          secondary: '#10B981',
+          accent: '#3B82F6',
           danger: '#EF4444',
-          info: '#6366F1',
-        }
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Sora', 'Inter', 'sans-serif'],
-      }
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'San Francisco', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
     },
   },
   plugins: [],

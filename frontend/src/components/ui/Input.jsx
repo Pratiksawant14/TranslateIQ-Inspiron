@@ -4,12 +4,12 @@ const Input = ({ label, error, className = '', ...props }) => {
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-slate-300">{label}</label>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)]">{label}</label>
       )}
       <input
-        className={`w-full px-3 py-2 rounded-lg bg-[#0A1628] border text-white text-sm placeholder:text-slate-500
+        className={`w-full px-3 py-2 rounded-lg bg-[var(--color-bg-surface)] border text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)]
           focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-colors
-          ${error ? 'border-red-500' : 'border-[#1E3A5F]'}
+          ${error ? 'border-red-500' : 'border-[var(--color-border)]'}
         `}
         {...props}
       />

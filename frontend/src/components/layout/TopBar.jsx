@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, User } from 'lucide-react';
+import { Bell, User, Search } from 'lucide-react';
 
 const TopBar = () => {
   const location = useLocation();
@@ -37,30 +37,75 @@ const TopBar = () => {
   }
 
   return (
-    <header className="fixed top-0 left-[240px] right-0 h-[56px] bg-[#0A1628] border-b border-[#1E3A5F] z-10">
+    <header className="glassmorphic-header fixed top-0 left-0 right-0 h-[56px] z-40">
       <div className="h-full px-6 flex items-center justify-between">
-        {/* Left Side */}
+        {/* Left Side — Page Title + Breadcrumb */}
         <div className="flex flex-col justify-center">
-          <h2 className="font-display font-semibold text-white text-lg leading-tight">{pageTitle}</h2>
-          <span className="text-[10px] text-slate-400 uppercase tracking-wider">{breadcrumb}</span>
+          <h2
+            className="font-display font-semibold text-lg leading-tight"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            {pageTitle}
+          </h2>
+          <span
+            className="text-xs uppercase tracking-wider"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            {breadcrumb}
+          </span>
         </div>
 
-        {/* Right Side */}
+        {/* Center — Search (inspired by the reference mockup) */}
+        <div className="hidden md:flex items-center">
+          <div
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full border"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-bg-base)',
+              minWidth: '220px',
+            }}
+          >
+            <Search className="w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
+            <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Search</span>
+          </div>
+        </div>
+
+        {/* Right Side — Notifications + User Avatar */}
         <div className="flex items-center space-x-4">
-          <button className="text-slate-400 hover:text-white transition-colors relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-[#2563EB] rounded-full"></span>
+          <button
+            className="relative group transition-all duration-200"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            <Bell className="w-5 h-5 group-hover:text-indigo-600 transition-colors" />
+            {/* Notification dot */}
+            <span
+              className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            />
           </button>
           
-          <div className="h-6 w-px bg-[#1E3A5F]"></div>
+          <div className="h-6 w-px" style={{ backgroundColor: 'var(--color-border)' }} />
           
           <div className="flex items-center space-x-3 cursor-pointer group">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
-              <User className="w-4 h-4" />
+            <div
+              className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:border-indigo-400 transition-all"
+              style={{
+                backgroundColor: 'var(--color-primary-light)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              <User className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-slate-200">Workspace</span>
-              <span className="text-[10px] text-slate-500">TranslateIQ</span>
+              <span
+                className="text-sm font-medium group-hover:text-indigo-600 transition-colors"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                Workspace
+              </span>
+              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                TranslateIQ
+              </span>
             </div>
           </div>
         </div>
