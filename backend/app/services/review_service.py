@@ -9,6 +9,21 @@ from app.models.audit_log import AuditLog
 from app.models.telemetry import TelemetrySignal
 from app.services.tm_service import store_tm_entry
 
+# Language code normalization map
+# Ensures TM entries are always stored with consistent keys regardless of what the UI sends
+_LANG_NORMALIZE = {
+    "english": "en", "spanish": "es", "french": "fr", "german": "de",
+    "japanese": "ja", "portuguese": "pt", "italian": "it", "arabic": "ar",
+    "chinese": "zh", "hindi": "hi",
+}
+
+def _normalize_lang(lang: str) -> str:
+    """Normalizes any language string to lowercase 2-letter code."""
+    if not lang or lang in ("null", "none", "", "undefined"):
+        return "es"  # Safe default
+    cleaned = lang.strip().lower()
+    return _LANG_NORMALIZE.get(cleaned, cleaned[:2])  # Take first 2 chars as ISO code fallback
+
 async def accept_segment(db: AsyncSession, segment_id: str, target_language: str) -> Segment:
     import logging
     logger = logging.getLogger(__name__)
@@ -51,14 +66,17 @@ async def accept_segment(db: AsyncSession, segment_id: str, target_language: str
     await db.commit()
     await db.refresh(segment)
 
-    # 4. TM Update (non-blocking — don't let Qdrant/embedding errors block the accept)
+    # 4. TM Update (non-blocking)
     if segment.translated_text:
         try:
+            # Normalize both lang codes BEFORE storing so retrieval always matches
+            norm_src = _normalize_lang(project.source_language)
+            norm_tgt = _normalize_lang(target_language)
             await store_tm_entry(
                 db=db,
                 project_id=project.id,
-                source_language=project.source_language,
-                target_language=target_language,
+                source_language=norm_src,
+                target_language=norm_tgt,
                 source_text=segment.source_text,
                 target_text=segment.translated_text
             )
@@ -124,11 +142,13 @@ async def edit_segment(db: AsyncSession, segment_id: str, new_translation: str, 
 
     # 4. TM Update with corrected translation (non-blocking)
     try:
+        norm_src = _normalize_lang(project.source_language)
+        norm_tgt = _normalize_lang(target_language)
         await store_tm_entry(
             db=db,
             project_id=project.id,
-            source_language=project.source_language,
-            target_language=target_language,
+            source_language=norm_src,
+            target_language=norm_tgt,
             source_text=segment.source_text,
             target_text=new_translation
         )

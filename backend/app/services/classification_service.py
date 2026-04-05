@@ -14,6 +14,20 @@ async def classify_document_segments(
     source_language: str, 
     target_language: str
 ) -> Dict:
+    # Normalize language codes to match TM storage format
+    _LANG_NORMALIZE = {
+        "english": "en", "spanish": "es", "french": "fr", "german": "de",
+        "japanese": "ja", "portuguese": "pt", "italian": "it", "arabic": "ar",
+        "chinese": "zh", "hindi": "hi",
+    }
+    def _norm(lang):
+        if not lang or lang in ("null", "none", "", "undefined"):
+            return "es"
+        c = lang.strip().lower()
+        return _LANG_NORMALIZE.get(c, c[:2])
+    
+    source_language = _norm(source_language)
+    target_language = _norm(target_language)
     # Step 1: Fetch pending status ordered by segment_index
     segments_query = await db.execute(
         select(Segment)

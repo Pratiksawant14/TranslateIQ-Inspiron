@@ -33,6 +33,21 @@ async def translate_document_segments(
     style_profile_id: Optional[str] = None
 ) -> Dict[str, Any]:
 
+    # Normalize language codes to match TM storage format
+    _LANG_MAP = {
+        "english": "en", "spanish": "es", "french": "fr", "german": "de",
+        "japanese": "ja", "portuguese": "pt", "italian": "it", "arabic": "ar",
+        "chinese": "zh", "hindi": "hi",
+    }
+    def _norm(lang):
+        if not lang or lang in ("null", "none", "", "undefined"):
+            return "es"
+        c = lang.strip().lower()
+        return _LANG_MAP.get(c, c[:2])
+
+    source_language = _norm(source_language)
+    target_language = _norm(target_language)
+
     # 1. Fetch all segments
     segments_query = await db.execute(
         select(Segment)
