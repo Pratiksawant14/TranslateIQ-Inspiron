@@ -30,7 +30,7 @@ Generic Cloud LLMs (like ChatGPT) are expensive, leak confidential data, and hal
 
 ```mermaid
 graph TD
-    User([User Upload (.docx)]) --> Parse[Docling Visual Parser]
+    User([User Upload docx]) --> Parse[Docling Visual Parser]
     Parse --> Validate[Claude 3.5 Sonnet Validator]
     Validate --> HybridSearch[Qdrant Dense + BM25 Sparse]
     
