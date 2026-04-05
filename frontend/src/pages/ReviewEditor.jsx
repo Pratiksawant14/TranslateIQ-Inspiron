@@ -182,16 +182,23 @@ const ReviewEditor = () => {
   // Export handler
   // Bulk approval handler
   const handleApproveAll = async () => {
-    if (!segments.length || !targetLanguage) return;
+    if (!segments.length) {
+      return toast('No segments to approve', 'info');
+    }
+    
+    // Fallback to 'es' if targetLanguage is missing for any reason
+    const effectiveTargetLang = targetLanguage || 'es';
     
     setIsApprovingAll(true);
+    console.log(`Approving all for project ${projectId}, doc ${documentId}, lang ${effectiveTargetLang}`);
+    
     try {
-      await approveAllSegments(projectId, documentId, targetLanguage);
+      await approveAllSegments(projectId, documentId, effectiveTargetLang);
       queryClient.invalidateQueries(['review-session', projectId, documentId]);
       toast('All segments have been approved', 'success');
     } catch (error) {
       console.error('Approve all failed:', error);
-      toast('Failed to approve all segments', 'error');
+      toast(error.response?.data?.detail || 'Failed to approve all segments', 'error');
     } finally {
       setIsApprovingAll(false);
     }
