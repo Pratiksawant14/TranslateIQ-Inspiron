@@ -37,12 +37,13 @@ async def accept_segment(db: AsyncSession, segment_id: str, target_language: str
     )
     db.add(audit)
 
-    # 3. Telemetry Signal (desirable format without human_edit)
+    # 3. Telemetry Signal — mark is_trained=False so JIT queue picks it up
     telemetry = TelemetrySignal(
         segment_id=segment.id,
         source_text=segment.source_text,
         mt_output=segment.translated_text or "",
-        signal_label="desirable"
+        signal_label="desirable",
+        is_trained=False  # Delta queue: will be trained on next document translate
     )
     db.add(telemetry)
 
@@ -95,14 +96,15 @@ async def edit_segment(db: AsyncSession, segment_id: str, new_translation: str, 
     )
     db.add(audit)
 
-    # 3. Telemetry Signal (Two Records: Undesirable MT, Desirable Edit)
+    # 3. Telemetry Signal — both records marked is_trained=False
     if old_translation:
         telemetry_undesirable = TelemetrySignal(
             segment_id=segment.id,
             source_text=segment.source_text,
             mt_output=old_translation,
             human_edit=new_translation,
-            signal_label="undesirable"
+            signal_label="undesirable",
+            is_trained=False
         )
         db.add(telemetry_undesirable)
         
@@ -110,8 +112,9 @@ async def edit_segment(db: AsyncSession, segment_id: str, new_translation: str, 
         segment_id=segment.id,
         source_text=segment.source_text,
         mt_output=new_translation,
-        human_edit=new_translation, # Some models prefer marking the edit as the intended ideal MT output target
-        signal_label="desirable"
+        human_edit=new_translation,
+        signal_label="desirable",
+        is_trained=False  # Delta queue: will be trained on next document translate
     )
     db.add(telemetry_desirable)
 
@@ -154,13 +157,14 @@ async def reject_segment(db: AsyncSession, segment_id: str) -> Segment:
     )
     db.add(audit)
 
-    # 3. Telemetry Signal
+    # 3. Telemetry Signal — mark as untrained
     if segment.translated_text:
         telemetry_undesirable = TelemetrySignal(
             segment_id=segment.id,
             source_text=segment.source_text,
             mt_output=segment.translated_text,
-            signal_label="undesirable"
+            signal_label="undesirable",
+            is_trained=False
         )
         db.add(telemetry_undesirable)
 

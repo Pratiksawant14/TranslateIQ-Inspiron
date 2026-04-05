@@ -14,6 +14,7 @@ from app.models.glossary import GlossaryEntry
 from app.models.style_profile import StyleProfile
 from app.services.retrieval_service import retrieve_tm_matches
 from app.services.document_service import update_document_status
+from app.services.incremental_finetune_service import run_jit_incremental_finetune, get_untrained_count
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,25 @@ async def translate_document_segments(
         )
 
     logger.info(f"=== TRANSLATION START === Key: {api_key[:12]}... | Segments: {len(segments)} | Lang: {source_language}->{target_language}")
+
+    # =====================================================================
+    # JIT INCREMENTAL FINE-TUNING INTERCEPT
+    # Before translating: check if any new approved segments haven't been
+    # trained into the local model yet. If yes, evolve the model NOW
+    # using only the delta + replay buffer (never retrain full dataset).
+    # =====================================================================
+    try:
+        untrained_count = await get_untrained_count(db, project_id)
+        if untrained_count > 0:
+            logger.info(f"[JIT] {untrained_count} untrained signals found — triggering incremental fine-tune before translation")
+            jit_result = await run_jit_incremental_finetune(db, project_id)
+            logger.info(f"[JIT] Fine-tune result: {jit_result}")
+        else:
+            logger.info(f"[JIT] No untrained signals — local model is fully up-to-date, skipping fine-tune.")
+    except Exception as e:
+        # JIT training failure must NEVER block translation — degrade gracefully
+        logger.warning(f"[JIT] Incremental fine-tune failed (non-blocking): {e}")
+    # =====================================================================
 
     # OpenRouter API headers
     headers = {
